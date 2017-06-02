@@ -11,7 +11,7 @@ gainloss$gene_name<-CNVsubset$gene_name
 for (i in 1:nrow(CNVsubset)){
   name<-CNVsubset$gene_name[i]
   if (!name %in% names(gainloss)){
-    x<-(CNVsubset[grep((CNVsubset$gene_name[10]),CNVsubset$gene_name),]) #used order from grep to sepcify and sort gene name,
+    x<-(CNVsubset[grep((CNVsubset$gene_name[i),CNVsubset$gene_name),]) #used order from grep to sepcify and sort gene name,
     y<-filter(x,x$MUT_TYPE=="gain")
     z<-filter(x,x$MUT_TYPE=="loss")  
     j<-nrow(y)
