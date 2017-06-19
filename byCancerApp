@@ -1,0 +1,136 @@
+require(data.table)
+require(tidyverse)
+require(plotly)
+require(ggplot2)
+
+#source("prepData.R")
+#load(Rdata)
+
+byCancerData<-fread('CosmicCompleteCNA.csv')
+byCancerData<- subset(byCancerData,TOTAL_CN>=8 | TOTAL_CN <2)
+pq<-grep("_", byCancerData$gene_name)
+byCancerData=byCancerData[-c(pq)]
+byCancerData<-byCancerData[,c("CNV_ID", "gene_name","Primary site","TOTAL_CN","MUT_TYPE")]
+colnames(byCancerData)<-c("CNV_ID," ,"gene_name","primarySite","TOTAL_CN","MUT_TYPE")
+byCancerSubset<-byCancerData %>% group_by(gene_name,primarySite,MUT_TYPE) %>% tally(sort = TRUE)
+
+
+pancreas_Cancer<-filter(byCancerSubset,primarySite=="pancreas")
+breast_Cancer<-filter(byCancerSubset,primarySite=="breast")
+central_Nervous_System_Cancer<-filter(byCancerSubset,primarySite=="central_nervous_system")
+ovarian_Cancer<-filter(byCancerSubset,primarySite=="ovary")
+haematopoietic_and_lymphoid_tissue_Cancer<-filter(byCancerSubset,primarySite=="haematopoietic_and_lymphoid_tissue                                              ")
+lung_Cancer<-filter(byCancerSubset,primarySite=="lung")
+skin_Cancer<-filter(byCancerSubset,primarySite=="skin")
+autonomic_Ganglia_Cancer<-filter(byCancerSubset,primarySite=="autonomic_ganglia")
+bone_Cancer<-filter(byCancerSubset,primarySite=="bone")
+large_Intestine_Cancer<-filter(byCancerSubset,primarySite=="large_intestine")
+prostate_Cancer<-filter(byCancerSubset,primarySite=="prostate")
+upper_Aerodigestive_Tract_Cancer<-filter(byCancerSubset,primarySite=="upper_aerodigestive_tract")
+kidney_Cancer<-filter(byCancerSubset,primarySite=="kidney")
+urinary_Tract_Cancer<-filter(byCancerSubset,primarySite=="urinary_tract")
+oesophagus_Cancer<-filter(byCancerSubset,primarySite=="oesophagus")
+liver_Cancer<-filter(byCancerSubset,primarySite=="liver")
+endometrial_Cancer<-filter(byCancerSubset,primarySite=="endometrium")
+testicular_Cancer<-filter(byCancerSubset,primarySite=="testis")
+thyroid_Cancer<-filter(byCancerSubset,primarySite=="thyroid")
+cervical_Cancer<-filter(byCancerSubset,primarySite=="cervix")
+soft_Tissue_Cancer<-filter(byCancerSubset,primarySite=="soft_tissue")
+adrenal_Gland_Cancer<-filter(byCancerSubset,primarySite=="adrenal_gland")
+pleural_Cancer<-filter(byCancerSubset,primarySite=="pleura")
+eye_Cancer<-filter(byCancerSubset,primarySite=="eye")
+thymus_Cancer<-filter(byCancerSubset,primarySite=="thymus")
+biliary_Tract_Cancer<-filter(byCancerSubset,primarySite=="biliar_tract")
+NS_Cancer<-filter(byCancerSubset,primarySite=="NS")
+vulva_Cancer<-filter(byCancerSubset,primarySite=="vulva")
+small_Intestine_Cancer<-filter(byCancerSubset,primarySite=="small_intestine")
+salivary_Gland_Cancer<-filter(byCancerSubset,primarySite=="salivary_gland")
+placental_Cancer<-filter(byCancerSubset,primarySite=="placenta")
+stomach_Cancer<-filter(byCancerSubset,primarySite=="stomach")
+bone_Cancer<-filter(byCancerSubset,primarySite=="bone")
+
+cancerNames<-c("pancreasCancer","stomachCancer","centralNervousSystemCancer","lungCancer","breastCancer","haematopoieticandlymphoidtissueCancer","largeIntestineCancer","skinCancer","ovarianCancer","kidneyCancer","upperAerodigestiveTractCancer","oesophagusCancer","liverCancer","endometrialCancer","prostateCancer","thyroidCancer","softTissueCancer","testicularCancer","pleuralCancer","boneCancer","autonomicGangliaCancer","thymusCancer","eyeCancer","NSCancer","biliaryTractCancer","vulvaCancer","salivaryGlandCancer","placentalCancer","smallIntestineCancer")
+name<-list(pancreasCancer,stomachCancer,centralNervousSystemCancer,lungCancer,breastCancer,haematopoieticandlymphoidtissueCancer,largeIntestineCancer, skinCancer, ovarianCancer, kidneyCancer, upperAerodigestiveTractCancer, oesophagusCancer, liverCancer, endometrialCancer, prostateCancer,thyroidCancer,softTissueCancer,testicularCancer,pleuralCancer,boneCancer,autonomicGangliaCancer,thymusCancer,eyeCancer,NSCancer,biliaryTractCancer,vulvaCancer,salivaryGlandCancer,placentalCancer,smallIntestineCancer)
+numbersGain<-list(pancreas_Cancer,stomach_Cancer,central_Nervous_System_Cancer,lung_Cancer,breast_Cancer,haematopoietic_and_lymphoid_tissue_Cancer,large_Intestine_Cancer,skin_Cancer,ovarian_Cancer,kidney_Cancer,upper_Aerodigestive_Tract_Cancer,oesophagus_Cancer,liver_Cancer,endometrial_Cancer,prostate_Cancer,thyroid_Cancer,soft_Tissue_Cancer,testicular_Cancer,pleural_Cancer,bone_Cancer,autonomic_Ganglia_Cancer,thymus_Cancer,eye_Cancer,NS_Cancer,biliary_Tract_Cancer,vulva_Cancer,salivary_Gland_Cancer,placental_Cancer,small_Intestine_Cancer,urinary_Tract_Cancer,liver_Cancer,endometrial_Cancer,thyroid_Cancer,cervical_Cancer,adrenal_Gland_Cancer)
+numbersLoss<-list(pancreas_Cancer,stomach_Cancer,central_Nervous_System_Cancer,lung_Cancer,breast_Cancer,haematopoietic_and_lymphoid_tissue_Cancer,large_Intestine_Cancer,skin_Cancer,ovarian_Cancer,kidney_Cancer,upper_Aerodigestive_Tract_Cancer,oesophagus_Cancer,liver_Cancer,endometrial_Cancer,prostate_Cancer,thyroid_Cancer,soft_Tissue_Cancer,testicular_Cancer,pleural_Cancer,bone_Cancer,autonomic_Ganglia_Cancer,thymus_Cancer,eye_Cancer,NS_Cancer,biliary_Tract_Cancer,vulva_Cancer,salivary_Gland_Cancer,placental_Cancer,small_Intestine_Cancer,urinary_Tract_Cancer,liver_Cancer,endometrial_Cancer,thyroid_Cancer,cervical_Cancer,adrenal_Gland_Cancer)
+geneNames<-byCancerSubset$gene_name
+
+names<-c("breastCancer","lungCancer")
+
+
+ncancerName<-c()
+as.data.frame(j)
+as.data.frame(p)
+as.data.frame(q)
+for (i in 1:37){
+  j<-assign(paste0("Gain", cancerNames[i]), filter(numbersGain[[i]],MUT_TYPE=="gain"))
+  p<-assign(paste0("Loss", cancerNames[i]), filter(numbersGain[[i]],MUT_TYPE=="loss"))
+  q<-merge(j,p,by="gene_name")
+  colnames(q)<-c("gene_name","NA","NA","Gain","NA","NA","Loss")
+  assign(cancerNames[i],q[c("gene_name","Gain","Loss")])
+  
+  # cancerType[4]<-cbind(j$n,p$n,geneNames)
+}
+
+
+save.image("CNVdataComsic.RData")
+
+############ PLOTTING 
+# ggplot() + 
+#   ylim(-400,200) +
+#   geom_point(data = GainpancreasCancer, aes(x=gene_name, y=n)) + 
+#   geom_point(data = LosspancreasCancer, aes(gene_name, y=-n)) +
+#   xlab("Gene Name")+ylab("Copy Number Variable")+ggtitle("Pacreatic Cancer")+
+#   theme(plot.title = element_text(hjust = 0.5))
+
+
+###################################
+######        SHINY      APP
+library(shiny)
+library(plotly)
+
+ui<-basicPage(
+  titlePanel("Basic widgets"),
+  sidebarLayout(
+    sidebarPanel(
+      selectizeInput("cancerType","Cancer",choices=c("pancreasCancer","stomachCancer","centralNervousSystemCancer","lungCancer","breastCancer","haematopoieticandlymphoidtissueCancer","largeIntestineCancer","skinCancer","ovarianCancer","kidneyCancer","upperAerodigestiveTractCancer","oesophagusCancer","liverCancer","endometrialCancer","prostateCancer","thyroidCancer","softTissueCancer","testicularCancer","pleuralCancer","boneCancer","autonomicGangliaCancer","thymusCancer","eyeCancer","NSCancer","biliaryTractCancer","vulvaCancer","salivaryGlandCancer","placentalCancer","smallIntestineCancer")),
+                                            
+      selectizeInput("gene","Gene Name",choices=NULL),
+      
+      numericInput("num", "Upper Threshold" 
+                   ,100),
+      numericInput("num2", "Lower Threshold"
+                   ,100),
+      submitButton("Submit")),
+    
+    mainPanel(
+      plotOutput('plot'))
+  ))
+
+server <- function(output,input) {
+
+
+  cancerType<-reactive({
+    x<-get(input$cancerType)
+  })
+  
+  # gene<-reactive({
+  #   y<-get(input$gene)
+  # })
+  output$plot <- renderPlot({
+    cancerType<- subset(cancerType(),Gain >= input$num)
+    cancerType<- subset(cancerType(),Loss >= input$num2)
+    #cancerType<-subset(cancerType(),gene_name=input$gene$gene_name)
+    #cancerType<-cancerType()[grep(paste0("",(input$gene)),cancerType()),]
+    z<-ggplot(cancerType, aes(x=gene_name, y=Gain),size=5) + 
+      ylim(-200,200) +
+      geom_point()+
+      geom_point(aes(y = -Loss)) +
+      xlab("Gene Name")+ylab("Copy Number Variable")+ggtitle(paste(as.character(input$cancerType)))+
+      theme(plot.title = element_text(hjust = .5 ,size=20))
+print(z)
+  })
+    }
+
+shinyApp(ui,server)
+
