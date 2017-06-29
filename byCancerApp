@@ -2,24 +2,51 @@ require(data.table)
 require(tidyverse)
 require(plotly)
 require(ggplot2)
+require(biomaRt)
+require(shiny)
+#####Develops dataset chromosomes 
+# Use the Ensembl GRCH37 reference genome
+mart <- useEnsembl(biomart="ensembl", dataset = "hsapiens_gene_ensembl", GRCh=37)
 
-#source("prepData.R")
-#load(Rdata)
+# Data frame of attributes which you can query / return from ensembl
+atts <- listAttributes(mart)
 
+# Example (querying with "hgnc_symbol"...  you can pass in a vector to values=)
+example <- getBM(attributes = c("hgnc_symbol",
+                                "chromosome_name",
+                                "start_position",
+                                "end_position",
+                                "strand"),
+                 #filters = "hgnc_symbol", 
+                 #values = attributes,
+                 mart = mart)
+#Gets all data from attributes from all of human genome
+chromosomes<-arrange(example,start_position)
+#Filters out non relevant data so I only have chromosome numbers not letter garbage
+chromosomes<-chromosomes[-c(grep("_", chromosomes$chromosome_name)),]
+chromosomes<-chromosomes[-c(grep("G", chromosomes$chromosome_name)),]
+chromosomes<-chromosomes[-c(grep("M", chromosomes$chromosome_name)),]
+chromosomes<-chromosomes[-which(chromosomes$hgnc_symbol==""),]
+#Turns chromosomes into data.frame so I can manipulate it as so
+as.data.frame(chromosomes)#turns chromosomes into data.frame 
+#arrange chromosome data by chromosome number
+chromosomes<-arrange(chromosomes,chromosome_name)
+
+######################################################################################
+setwd("/Users/jasonlewis/Downloads")
 byCancerData<-fread('CosmicCompleteCNA.csv')
-byCancerData<- subset(byCancerData,TOTAL_CN>=8 | TOTAL_CN <2)
-pq<-grep("_", byCancerData$gene_name)
-byCancerData=byCancerData[-c(pq)]
-byCancerData<-byCancerData[,c("CNV_ID", "gene_name","Primary site","TOTAL_CN","MUT_TYPE")]
-colnames(byCancerData)<-c("CNV_ID," ,"gene_name","primarySite","TOTAL_CN","MUT_TYPE")
-byCancerSubset<-byCancerData %>% group_by(gene_name,primarySite,MUT_TYPE) %>% tally(sort = TRUE)
-
+byCancerSubset<- subset(byCancerData,TOTAL_CN>=8 | TOTAL_CN <2)
+pq<-grep("_", byCancerSubset$gene_name)
+byCancerSubset=byCancerSubset[-c(pq)]
+byCancerSubset<-byCancerSubset[,c("CNV_ID", "gene_name","Primary site","TOTAL_CN","MUT_TYPE")]
+colnames(byCancerSubset)<-c("CNV_ID","gene_name","primarySite","TOTAL_CN","MUT_TYPE")
+byCancerSubset<-byCancerSubset %>% group_by(gene_name, primarySite, MUT_TYPE) %>% tally(sort = TRUE)
 
 pancreas_Cancer<-filter(byCancerSubset,primarySite=="pancreas")
 breast_Cancer<-filter(byCancerSubset,primarySite=="breast")
 central_Nervous_System_Cancer<-filter(byCancerSubset,primarySite=="central_nervous_system")
 ovarian_Cancer<-filter(byCancerSubset,primarySite=="ovary")
-haematopoietic_and_lymphoid_tissue_Cancer<-filter(byCancerSubset,primarySite=="haematopoietic_and_lymphoid_tissue                                              ")
+haematopoietic_and_lymphoid_tissue_Cancer<-filter(byCancerSubset, primarySite=="haematopoietic_and_lymphoid_tissue")
 lung_Cancer<-filter(byCancerSubset,primarySite=="lung")
 skin_Cancer<-filter(byCancerSubset,primarySite=="skin")
 autonomic_Ganglia_Cancer<-filter(byCancerSubset,primarySite=="autonomic_ganglia")
@@ -40,7 +67,7 @@ adrenal_Gland_Cancer<-filter(byCancerSubset,primarySite=="adrenal_gland")
 pleural_Cancer<-filter(byCancerSubset,primarySite=="pleura")
 eye_Cancer<-filter(byCancerSubset,primarySite=="eye")
 thymus_Cancer<-filter(byCancerSubset,primarySite=="thymus")
-biliary_Tract_Cancer<-filter(byCancerSubset,primarySite=="biliar_tract")
+biliary_Tract_Cancer<-filter(byCancerSubset,primarySite=="biliary_tract")
 NS_Cancer<-filter(byCancerSubset,primarySite=="NS")
 vulva_Cancer<-filter(byCancerSubset,primarySite=="vulva")
 small_Intestine_Cancer<-filter(byCancerSubset,primarySite=="small_intestine")
@@ -50,7 +77,7 @@ stomach_Cancer<-filter(byCancerSubset,primarySite=="stomach")
 bone_Cancer<-filter(byCancerSubset,primarySite=="bone")
 
 cancerNames<-c("pancreasCancer","stomachCancer","centralNervousSystemCancer","lungCancer","breastCancer","haematopoieticandlymphoidtissueCancer","largeIntestineCancer","skinCancer","ovarianCancer","kidneyCancer","upperAerodigestiveTractCancer","oesophagusCancer","liverCancer","endometrialCancer","prostateCancer","thyroidCancer","softTissueCancer","testicularCancer","pleuralCancer","boneCancer","autonomicGangliaCancer","thymusCancer","eyeCancer","NSCancer","biliaryTractCancer","vulvaCancer","salivaryGlandCancer","placentalCancer","smallIntestineCancer")
-name<-list(pancreasCancer,stomachCancer,centralNervousSystemCancer,lungCancer,breastCancer,haematopoieticandlymphoidtissueCancer,largeIntestineCancer, skinCancer, ovarianCancer, kidneyCancer, upperAerodigestiveTractCancer, oesophagusCancer, liverCancer, endometrialCancer, prostateCancer,thyroidCancer,softTissueCancer,testicularCancer,pleuralCancer,boneCancer,autonomicGangliaCancer,thymusCancer,eyeCancer,NSCancer,biliaryTractCancer,vulvaCancer,salivaryGlandCancer,placentalCancer,smallIntestineCancer)
+#name<-list(pancreasCancer,stomachCancer,centralNervousSystemCancer,lungCancer,breastCancer,haematopoieticandlymphoidtissueCancer,largeIntestineCancer, skinCancer, ovarianCancer, kidneyCancer, upperAerodigestiveTractCancer, oesophagusCancer, liverCancer, endometrialCancer, prostateCancer,thyroidCancer,softTissueCancer,testicularCancer,pleuralCancer,boneCancer,autonomicGangliaCancer,thymusCancer,eyeCancer,NSCancer,biliaryTractCancer,vulvaCancer,salivaryGlandCancer,placentalCancer,smallIntestineCancer)
 numbersGain<-list(pancreas_Cancer,stomach_Cancer,central_Nervous_System_Cancer,lung_Cancer,breast_Cancer,haematopoietic_and_lymphoid_tissue_Cancer,large_Intestine_Cancer,skin_Cancer,ovarian_Cancer,kidney_Cancer,upper_Aerodigestive_Tract_Cancer,oesophagus_Cancer,liver_Cancer,endometrial_Cancer,prostate_Cancer,thyroid_Cancer,soft_Tissue_Cancer,testicular_Cancer,pleural_Cancer,bone_Cancer,autonomic_Ganglia_Cancer,thymus_Cancer,eye_Cancer,NS_Cancer,biliary_Tract_Cancer,vulva_Cancer,salivary_Gland_Cancer,placental_Cancer,small_Intestine_Cancer,urinary_Tract_Cancer,liver_Cancer,endometrial_Cancer,thyroid_Cancer,cervical_Cancer,adrenal_Gland_Cancer)
 numbersLoss<-list(pancreas_Cancer,stomach_Cancer,central_Nervous_System_Cancer,lung_Cancer,breast_Cancer,haematopoietic_and_lymphoid_tissue_Cancer,large_Intestine_Cancer,skin_Cancer,ovarian_Cancer,kidney_Cancer,upper_Aerodigestive_Tract_Cancer,oesophagus_Cancer,liver_Cancer,endometrial_Cancer,prostate_Cancer,thyroid_Cancer,soft_Tissue_Cancer,testicular_Cancer,pleural_Cancer,bone_Cancer,autonomic_Ganglia_Cancer,thymus_Cancer,eye_Cancer,NS_Cancer,biliary_Tract_Cancer,vulva_Cancer,salivary_Gland_Cancer,placental_Cancer,small_Intestine_Cancer,urinary_Tract_Cancer,liver_Cancer,endometrial_Cancer,thyroid_Cancer,cervical_Cancer,adrenal_Gland_Cancer)
 geneNames<-byCancerSubset$gene_name
@@ -58,17 +85,15 @@ geneNames<-byCancerSubset$gene_name
 names<-c("breastCancer","lungCancer")
 
 
-ncancerName<-c()
 as.data.frame(j)
 as.data.frame(p)
 as.data.frame(q)
 for (i in 1:37){
-  j<-assign(paste0("Gain", cancerNames[i]), filter(numbersGain[[i]],MUT_TYPE=="gain"))
-  p<-assign(paste0("Loss", cancerNames[i]), filter(numbersGain[[i]],MUT_TYPE=="loss"))
+  j<-assign(paste0("Gain",cancerNames[i]), filter(numbersGain[[i]],MUT_TYPE=="gain"))
+  p<-assign(paste0("Loss",cancerNames[i]), filter(numbersGain[[i]],MUT_TYPE=="loss"))
   q<-merge(j,p,by="gene_name")
   colnames(q)<-c("gene_name","NA","NA","Gain","NA","NA","Loss")
   assign(cancerNames[i],q[c("gene_name","Gain","Loss")])
-  
   # cancerType[4]<-cbind(j$n,p$n,geneNames)
 }
 
@@ -85,7 +110,7 @@ save.image("CNVdataComsic.RData")
 
 
 ###################################
-######        SHINY      APP
+######        SHINY      APP       1
 library(shiny)
 library(plotly)
 
@@ -95,7 +120,7 @@ ui<-basicPage(
     sidebarPanel(
       selectizeInput("cancerType","Cancer",choices=c("pancreasCancer","stomachCancer","centralNervousSystemCancer","lungCancer","breastCancer","haematopoieticandlymphoidtissueCancer","largeIntestineCancer","skinCancer","ovarianCancer","kidneyCancer","upperAerodigestiveTractCancer","oesophagusCancer","liverCancer","endometrialCancer","prostateCancer","thyroidCancer","softTissueCancer","testicularCancer","pleuralCancer","boneCancer","autonomicGangliaCancer","thymusCancer","eyeCancer","NSCancer","biliaryTractCancer","vulvaCancer","salivaryGlandCancer","placentalCancer","smallIntestineCancer")),
                                             
-      selectizeInput("gene","Gene Name",choices=NULL),
+      selectInput("gene","Gene Name",choices="ADAM18"),
       
       numericInput("num", "Upper Threshold" 
                    ,100),
@@ -113,16 +138,16 @@ server <- function(output,input) {
   cancerType<-reactive({
     x<-get(input$cancerType)
   })
+  gene<- reactive({
   
-  # gene<-reactive({
-  #   y<-get(input$gene)
-  # })
+    
+  })
   output$plot <- renderPlot({
-    cancerType<- subset(cancerType(),Gain >= input$num)
-    cancerType<- subset(cancerType(),Loss >= input$num2)
-    #cancerType<-subset(cancerType(),gene_name=input$gene$gene_name)
-    #cancerType<-cancerType()[grep(paste0("",(input$gene)),cancerType()),]
-    z<-ggplot(cancerType, aes(x=gene_name, y=Gain),size=5) + 
+    # cancerType<- subset(cancerType(),Gain >= input$num)
+    # cancerType<- subset(cancerType(),Loss >= input$num2)
+    # cancerType<-subset(cancerType(),gene_name="input$gene")
+    # cancerType<-cancerType()[grep((input$gene),cancerType()),]
+    z<-ggplot(cancerType(), aes(x=start_position, y=Gain),size=5) + 
       ylim(-200,200) +
       geom_point()+
       geom_point(aes(y = -Loss)) +
@@ -133,4 +158,1692 @@ print(z)
     }
 
 shinyApp(ui,server)
+
+pancreasCancer<-(left_join(pancreasCancer,chromosomes,by=c(gene_name="hgnc_symbol")))
+
+d<-c("pancreasCancer1","pancreasCancer2","pancreasCancer3","pancreasCancer4","pancreasCancer5","pancreasCancer6","pancreasCancer7","pancreasCancer8","pancreasCancer9","pancreasCancer10","pancreasCancer11","pancreasCancer12","pancreasCancer13","pancreasCancer14","pancreasCancer15","pancreasCancer16","pancreasCancer17","pancreasCancer18","pancreasCancer19","pancreasCancer20", "pancreasCancer21","pancreasCancer22")
+for (i in 1:22){
+  assign(d[i],data.frame(pancreasCancer[c(grep(paste("\\b",i,"\\b",sep=""),pancreasCancer$chromosome_name)),]))
+  assign(d[i],arrange(((get(d[i]))),start_position))
+  assign(d[i],(get(d[i])[c("gene_name","Gain","Loss","start_position")]))
+}
+  
+  pancreasCancerPlots<-c("pancreasCancerPlot1","pancreasCancerPlot2","pancreasCancerPlot3","pancreasCancerPlot4","pancreasCancerPlot5","pancreasCancerPlot6","pancreasCancerPlot7","pancreasCancerPlot8","pancreasCancerPlot9","pancreasCancerPlot10","pancreasCancerPlot11","pancreasCancerPlot12","pancreasCancerPlot13","pancreasCancerPlot14","pancreasCancerPlot15","pancreasCancerPlot16","pancreasCancerPlot17","pancreasCancerPlot18","pancreasCancerPlot19","pancreasCancerPlot20","pancreasCancerPlot21","pancreasCancerPlot22")
+for (i in 1:22){
+  assign(pancreasCancerPlots[i],
+         (ggplot(get(d[i]),aes(start_position,Gain),size=.5)+
+            geom_point()+
+            geom_point(aes(y=-Loss),col="red")+
+            xlab("Gene Start Position")+
+            ylab("Copy Number Variable")+ggtitle(paste0("chromosome",i))+
+            theme(plot.title = element_text(hjust = .5 ,size=14.5,face="bold"))+
+            theme(axis.text=element_text(size=10),
+                  axis.title=element_text(size=10,face="bold"))))
+}
+  
+##############################################
+         dsex<-c("pancreasCancerX","pancreasCancerY")
+         
+         for (i in LETTERS[24:25]){
+           assign(dsex[i],data.frame(pancreasCancer[c(grep(paste("\\b",i,"\\b",sep=""),pancreasCancer$chromosome_name)),]))
+           assign(dsex[i],arrange(((get(dsex[i]))),start_position))
+           assign(dsex[i],(get(dsex[i])[c("gene_name","Gain","Loss","start_position")]))
+         }
+pancreasCancerSexPlots<-c("pancreasCancerPlotX","pancreasCancerPlotY")
+
+
+for (i in LETTERS[24:25]){
+         assign(paste0("pancreasCancerPlot",i),
+                (ggplot(get(dsex[i]),aes(start_position,Gain),size=.5)+
+                   geom_point()+
+                   geom_point(aes(y=-Loss),color="red")+
+                   xlab("Gene Start Position")+
+                   ylab("Copy Number Variable")+ggtitle(paste0("chromosome",i))+
+                   theme(plot.title = element_text(hjust = .5 ,size=7.5,face="bold"))+
+                   theme(axis.text=element_text(size=5),
+                         axis.title=element_text(size=5,face="bold"))))
+  }
+
+pancreasCancerChromosomesPlot<-gridExtra::grid.arrange(pancreasCancerPlot1,pancreasCancerPlot2,pancreasCancerPlot3,pancreasCancerPlot4,pancreasCancerPlot5,pancreasCancerPlot6,pancreasCancerPlot7,pancreasCancerPlot8,pancreasCancerPlot9,pancreasCancerPlot10,pancreasCancerPlot11,pancreasCancerPlot12,pancreasCancerPlot13,pancreasCancerPlot14,pancreasCancerPlot15,pancreasCancerPlot16,pancreasCancerPlot17,pancreasCancerPlot18,pancreasCancerPlot19,pancreasCancerPlot20,pancreasCancerPlot21,pancreasCancerPlot22,pancreasCancerPlotX,pancreasCancerPlotY,nrow=6,ncol=4)
+
+##########################################################################################################
+
+ stomachCancer<-(left_join(stomachCancer,chromosomes,by=c(gene_name="hgnc_symbol")))
+
+
+a<-c("stomachCancer1","stomachCancer2","stomachCancer3","stomachCancer4","stomachCancer5","stomachCancer6","stomachCancer7","stomachCancer8","stomachCancer9","stomachCancer10","stomachCancer11","stomachCancer12","stomachCancer13","stomachCancer14","stomachCancer15","stomachCancer16","stomachCancer17","stomachCancer18","stomachCancer19","stomachCancer20", "stomachCancer21","stomachCancer22")
+for (i in 1:22){
+  assign(a[i],data.frame(stomachCancer[c(grep(paste("\\b",i,"\\b",sep=""),stomachCancer$chromosome_name)),]))
+  assign(a[i],arrange(((get(a[i]))),start_position))
+  assign(a[i],(get(a[i])[c("gene_name","Gain","Loss","start_position")]))
+}
+
+
+stomachCancerPlots<-c("stomachCancerPlot1","stomachCancerPlot2","stomachCancerPlot3","stomachCancerPlot4","stomachCancerPlot5","stomachCancerPlot6","stomachCancerPlot7","stomachCancerPlot8","stomachCancerPlot9","stomachCancerPlot10","stomachCancerPlot11","stomachCancerPlot12","stomachCancerPlot13","stomachCancerPlot14","stomachCancerPlot15","stomachCancerPlot16","stomachCancerPlot17","stomachCancerPlot18","stomachCancerPlot19","stomachCancerPlot20","stomachCancerPlot21","stomachCancerPlot22")
+for (i in 1:22){
+  
+  assign(stomachCancerPlots[i],
+         (ggplot(get(a[i]),aes(start_position,Gain),size=.5)+
+            geom_point()+
+            geom_point(aes(y=-Loss))+
+            xlab("Gene Start Position")+
+            ylab("Copy Number Variable")+ggtitle(paste0("chromosome",i))+
+            theme(plot.title = element_text(hjust = .5 ,size=7.5,face="bold"))+
+            theme(axis.text=element_text(size=5),
+                  axis.title=element_text(size=5,face="bold")))
+  )}
+
+##############################################
+asex<-c("stomachCancerX","stomachCancerY")
+
+for (i in LETTERS[24:25]){
+  assign(asex[i],data.frame(stomachCancer[c(grep(paste("\\b",i,"\\b",sep=""),stomachCancer$chromosome_name)),]))
+  assign(asex[i],arrange(((get(asex[i]))),start_position))
+  assign(asex[i],(get(asex[i])[c("gene_name","Gain","Loss","start_position")]))
+}
+stomachCancerSexPlots<-c("stomachCancerPlotX","stomachCancerPlotY")
+
+
+for (i in LETTERS[24:25]){
+  assign(paste0("stomachCancerPlot",i),
+         (ggplot(get(asex[i]),aes(start_position,Gain),size=.5)+
+            geom_point()+
+            geom_point(aes(y=-Loss))+
+            xlab("Gene Start Position")+
+            ylab("Copy Number Variable")+ggtitle(paste0("chromosome",i))+
+            theme(plot.title = element_text(hjust = .5 ,size=7.5,face="bold"))+
+            theme(axis.text=element_text(size=5),
+                  axis.title=element_text(size=5,face="bold"))))
+}
+
+stomachCancerChromosomesPlot<-grid.arrange(stomachCancerPlot1,stomachCancerPlot2,stomachCancerPlot3,stomachCancerPlot4,stomachCancerPlot5,stomachCancerPlot6,stomachCancerPlot7,stomachCancerPlot8,stomachCancerPlot9,stomachCancerPlot10,stomachCancerPlot11,stomachCancerPlot12,stomachCancerPlot13,stomachCancerPlot14,stomachCancerPlot15,stomachCancerPlot16,stomachCancerPlot17,stomachCancerPlot18,stomachCancerPlot19,stomachCancerPlot20,stomachCancerPlot21,stomachCancerPlot22,stomachCancerPlotX,stomachCancerPlotY,nrow=6,ncol=4)
+stomach<-grid.draw(stomachCancerChromosomesPlot)
+########################################################################################################################
+
+centralNervousSystemCancer<-(left_join(centralNervousSystemCancer,chromosomes,by=c(gene_name="hgnc_symbol")))
+
+b<-c("centralNervousSystemCancer1","centralNervousSystemCancer2","centralNervousSystemCancer3","centralNervousSystemCancer4","centralNervousSystemCancer5","centralNervousSystemCancer6","centralNervousSystemCancer7","centralNervousSystemCancer8","centralNervousSystemCancer9","centralNervousSystemCancer10","centralNervousSystemCancer11","centralNervousSystemCancer12","centralNervousSystemCancer13","centralNervousSystemCancer14","centralNervousSystemCancer15","centralNervousSystemCancer16","centralNervousSystemCancer17","centralNervousSystemCancer18","centralNervousSystemCancer19","centralNervousSystemCancer20", "centralNervousSystemCancer21","centralNervousSystemCancer22")
+for (i in 1:22){
+  assign(b[i],data.frame(centralNervousSystemCancer[c(grep(paste("\\b",i,"\\b",sep=""),centralNervousSystemCancer$chromosome_name)),]))
+  assign(b[i],arrange(((get(b[i]))),start_position))
+  assign(b[i],(get(b[i])[c("gene_name","Gain","Loss","start_position")]))
+}
+
+
+centralNervousSystemCancerPlots<-c("centralNervousSystemCancerPlot1","centralNervousSystemCancerPlot2","centralNervousSystemCancerPlot3","centralNervousSystemCancerPlot4","centralNervousSystemCancerPlot5","centralNervousSystemCancerPlot6","centralNervousSystemCancerPlot7","centralNervousSystemCancerPlot8","centralNervousSystemCancerPlot9","centralNervousSystemCancerPlot10","centralNervousSystemCancerPlot11","centralNervousSystemCancerPlot12","centralNervousSystemCancerPlot13","centralNervousSystemCancerPlot14","centralNervousSystemCancerPlot15","centralNervousSystemCancerPlot16","centralNervousSystemCancerPlot17","centralNervousSystemCancerPlot18","centralNervousSystemCancerPlot19","centralNervousSystemCancerPlot20","centralNervousSystemCancerPlot21","centralNervousSystemCancerPlot22")
+for (i in 1:22){
+  
+  assign(centralNervousSystemCancerPlots[i],
+         (ggplot(get(b[i]),aes(start_position,Gain),size=.5)+
+            geom_point()+
+            geom_point(aes(y=-Loss))+
+            xlab("Gene Start Position")+
+            ylab("Copy Number Variable")+ggtitle(paste0("chromosome",i))+
+            theme(plot.title = element_text(hjust = .5 ,size=7.5,face="bold"))+
+            theme(axis.text=element_text(size=5),
+                  axis.title=element_text(size=5,face="bold")))
+  )}
+
+##############################################
+bsex<-c("centralNervousSystemCancerX","centralNervousSystemCancerY")
+
+for (i in LETTERS[24:25]){
+  assign(bsex[i],data.frame(centralNervousSystemCancer[c(grep(paste("\\b",i,"\\b",sep=""),centralNervousSystemCancer$chromosome_name)),]))
+  assign(bsex[i],arrange(((get(bsex[i]))),start_position))
+  assign(bsex[i],(get(bsex[i])[c("gene_name","Gain","Loss","start_position")]))
+}
+centralNervousSystemCancerSexPlots<-c("centralNervousSystemCancerPlotX","centralNervousSystemCancerPlotY")
+
+
+for (i in LETTERS[24:25]){
+  assign(paste0("centralNervousSystemCancerPlot",i),
+         (ggplot(get(bsex[i]),aes(start_position,Gain),size=.5)+
+            geom_point()+
+            geom_point(aes(y=-Loss))+
+            xlab("Gene Start Position")+
+            ylab("Copy Number Variable")+ggtitle(paste0("chromosome",i))+
+            theme(plot.title = element_text(hjust = .5 ,size=7.5,face="bold"))+
+            theme(axis.text=element_text(size=5),
+                  axis.title=element_text(size=5,face="bold"))))
+}
+
+centralNervousSystemCancerChromosomesPlot<-grid.arrange(centralNervousSystemCancerPlot1,centralNervousSystemCancerPlot2,centralNervousSystemCancerPlot3,centralNervousSystemCancerPlot4,centralNervousSystemCancerPlot5,centralNervousSystemCancerPlot6,centralNervousSystemCancerPlot7,centralNervousSystemCancerPlot8,centralNervousSystemCancerPlot9,centralNervousSystemCancerPlot10,centralNervousSystemCancerPlot11,centralNervousSystemCancerPlot12,centralNervousSystemCancerPlot13,centralNervousSystemCancerPlot14,centralNervousSystemCancerPlot15,centralNervousSystemCancerPlot16,centralNervousSystemCancerPlot17,centralNervousSystemCancerPlot18,centralNervousSystemCancerPlot19,centralNervousSystemCancerPlot20,centralNervousSystemCancerPlot21,centralNervousSystemCancerPlot22,centralNervousSystemCancerPlotX,centralNervousSystemCancerPlotY,nrow=6,ncol=4)
+
+####################################################################################################################################
+
+lungCancer<-(left_join(lungCancer,chromosomes,by=c(gene_name="hgnc_symbol")))
+
+c<-c("lungCancer1","lungCancer2","lungCancer3","lungCancer4","lungCancer5","lungCancer6","lungCancer7","lungCancer8","lungCancer9","lungCancer10","lungCancer11","lungCancer12","lungCancer13","lungCancer14","lungCancer15","lungCancer16","lungCancer17","lungCancer18","lungCancer19","lungCancer20", "lungCancer21","lungCancer22")
+for (i in 1:22){
+  assign(c[i],data.frame(lungCancer[c(grep(paste("\\b",i,"\\b",sep=""),lungCancer$chromosome_name)),]))
+  assign(c[i],arrange(((get(c[i]))),start_position))
+  assign(c[i],(get(c[i])[c("gene_name","Gain","Loss","start_position")]))
+}
+
+
+lungCancerPlots<-c("lungCancerPlot1","lungCancerPlot2","lungCancerPlot3","lungCancerPlot4","lungCancerPlot5","lungCancerPlot6","lungCancerPlot7","lungCancerPlot8","lungCancerPlot9","lungCancerPlot10","lungCancerPlot11","lungCancerPlot12","lungCancerPlot13","lungCancerPlot14","lungCancerPlot15","lungCancerPlot16","lungCancerPlot17","lungCancerPlot18","lungCancerPlot19","lungCancerPlot20","lungCancerPlot21","lungCancerPlot22")
+for (i in 1:22){
+  
+  assign(lungCancerPlots[i],
+         (ggplot(get(c[i]),aes(start_position,Gain),size=.5)+
+            geom_point()+
+            geom_point(aes(y=-Loss))+
+            xlab("Gene Start Position")+
+            ylab("Copy Number Variable")+ggtitle(paste0("chromosome",i))+
+            theme(plot.title = element_text(hjust = .5 ,size=7.5,face="bold"))+
+            theme(axis.text=element_text(size=5),
+                  axis.title=element_text(size=5,face="bold")))
+  )}
+
+##############################################
+csex<-c("lungCancerX","lungCancerY")
+
+for (i in LETTERS[24:25]){
+  assign(csex[i],data.frame(lungCancer[c(grep(paste("\\b",i,"\\b",sep=""),lungCancer$chromosome_name)),]))
+  assign(csex[i],arrange(((get(csex[i]))),start_position))
+  assign(csex[i],(get(csex[i])[c("gene_name","Gain","Loss","start_position")]))
+}
+lungCancerSexPlots<-c("lungCancerPlotX","lungCancerPlotY")
+
+
+for (i in LETTERS[24:25]){
+  assign(paste0("lungCancerPlot",i),
+         (ggplot(get(csex[i]),aes(start_position,Gain),size=.5)+
+            geom_point()+
+            geom_point(aes(y=-Loss))+
+            xlab("Gene Start Position")+
+            ylab("Copy Number Variable")+ggtitle(paste0("chromosome",i))+
+            theme(plot.title = element_text(hjust = .5 ,size=7.5,face="bold"))+
+            theme(axis.text=element_text(size=5),
+                  axis.title=element_text(size=5,face="bold"))))
+}
+
+lungCancerChromosomesPlot<-grid.arrange(lungCancerPlot1,lungCancerPlot2,lungCancerPlot3,lungCancerPlot4,lungCancerPlot5,lungCancerPlot6,lungCancerPlot7,lungCancerPlot8,lungCancerPlot9,lungCancerPlot10,lungCancerPlot11,lungCancerPlot12,lungCancerPlot13,lungCancerPlot14,lungCancerPlot15,lungCancerPlot16,lungCancerPlot17,lungCancerPlot18,lungCancerPlot19,lungCancerPlot20,lungCancerPlot21,lungCancerPlot22,lungCancerPlotX,lungCancerPlotY,nrow=6,ncol=4)
+
+#########################################################################################################
+
+breastCancer<-(left_join(breastCancer,chromosomes,by=c(gene_name="hgnc_symbol")))
+
+e<-c("breastCancer1","breastCancer2","breastCancer3","breastCancer4","breastCancer5","breastCancer6","breastCancer7","breastCancer8","breastCancer9","breastCancer10","breastCancer11","breastCancer12","breastCancer13","breastCancer14","breastCancer15","breastCancer16","breastCancer17","breastCancer18","breastCancer19","breastCancer20", "breastCancer21","breastCancer22")
+for (i in 1:22){
+  assign(e[i],data.frame(breastCancer[c(grep(paste("\\b",i,"\\b",sep=""),breastCancer$chromosome_name)),]))
+  assign(e[i],arrange(((get(e[i]))),start_position))
+  assign(e[i],(get(e[i])[c("gene_name","Gain","Loss","start_position")]))
+}
+
+
+breastCancerPlots<-c("breastCancerPlot1","breastCancerPlot2","breastCancerPlot3","breastCancerPlot4","breastCancerPlot5","breastCancerPlot6","breastCancerPlot7","breastCancerPlot8","breastCancerPlot9","breastCancerPlot10","breastCancerPlot11","breastCancerPlot12","breastCancerPlot13","breastCancerPlot14","breastCancerPlot15","breastCancerPlot16","breastCancerPlot17","breastCancerPlot18","breastCancerPlot19","breastCancerPlot20","breastCancerPlot21","breastCancerPlot22")
+for (i in 1:22){
+  
+  assign(breastCancerPlots[i],
+         (ggplot(get(e[i]),aes(start_position,Gain),size=.5)+
+            geom_point()+
+            geom_point(aes(y=-Loss))+
+            xlab("Gene Start Position")+
+            ylab("Copy Number Variable")+ggtitle(paste0("chromosome",i))+
+            theme(plot.title = element_text(hjust = .5 ,size=7.5,face="bold"))+
+            theme(axis.text=element_text(size=5),
+                  axis.title=element_text(size=5,face="bold")))
+  )}
+
+##############################################
+esex<-c("breastCancerX","breastCancerY")
+
+for (i in LETTERS[24:25]){
+  assign(esex[i],data.frame(breastCancer[c(grep(paste("\\b",i,"\\b",sep=""),breastCancer$chromosome_name)),]))
+  assign(esex[i],arrange(((get(esex[i]))),start_position))
+  assign(esex[i],(get(esex[i])[c("gene_name","Gain","Loss","start_position")]))
+}
+breastCancerSexPlots<-c("breastCancerPlotX","breastCancerPlotY")
+
+
+for (i in LETTERS[24:25]){
+  assign(paste0("breastCancerPlot",i),
+         (ggplot(get(esex[i]),aes(start_position,Gain),size=.5)+
+            geom_point()+
+            geom_point(aes(y=-Loss))+
+            xlab("Gene Start Position")+
+            ylab("Copy Number Variable")+ggtitle(paste0("chromosome",i))+
+            theme(plot.title = element_text(hjust = .5 ,size=7.5,face="bold"))+
+            theme(axis.text=element_text(size=5),
+                  axis.title=element_text(size=5,face="bold"))))
+}
+
+breastCancerChromosomesPlot<-grid.arrange(breastCancerPlot1,breastCancerPlot2,breastCancerPlot3,breastCancerPlot4,breastCancerPlot5,breastCancerPlot6,breastCancerPlot7,breastCancerPlot8,breastCancerPlot9,breastCancerPlot10,breastCancerPlot11,breastCancerPlot12,breastCancerPlot13,breastCancerPlot14,breastCancerPlot15,breastCancerPlot16,breastCancerPlot17,breastCancerPlot18,breastCancerPlot19,breastCancerPlot20,breastCancerPlot21,breastCancerPlot22,breastCancerPlotX,breastCancerPlotY,nrow=6,ncol=4)
+
+#########################################################################################################
+
+haematopoieticandlymphoidtissueCancer<-(left_join(haematopoieticandlymphoidtissueCancer,chromosomes,by=c(gene_name="hgnc_symbol")))
+
+h<-c("haematopoieticandlymphoidtissueCancer1","haematopoieticandlymphoidtissueCancer2","haematopoieticandlymphoidtissueCancer3","haematopoieticandlymphoidtissueCancer4","haematopoieticandlymphoidtissueCancer5","haematopoieticandlymphoidtissueCancer6","haematopoieticandlymphoidtissueCancer7","haematopoieticandlymphoidtissueCancer8","haematopoieticandlymphoidtissueCancer9","haematopoieticandlymphoidtissueCancer10","haematopoieticandlymphoidtissueCancer11","haematopoieticandlymphoidtissueCancer12","haematopoieticandlymphoidtissueCancer13","haematopoieticandlymphoidtissueCancer14","haematopoieticandlymphoidtissueCancer15","haematopoieticandlymphoidtissueCancer16","haematopoieticandlymphoidtissueCancer17","haematopoieticandlymphoidtissueCancer18","haematopoieticandlymphoidtissueCancer19","haematopoieticandlymphoidtissueCancer20", "haematopoieticandlymphoidtissueCancer21","haematopoieticandlymphoidtissueCancer22")
+for (i in 1:22){
+  assign(h[i],data.frame(haematopoieticandlymphoidtissueCancer[c(grep(paste("\\b",i,"\\b",sep=""),haematopoieticandlymphoidtissueCancer$chromosome_name)),]))
+  assign(h[i],arrange(((get(h[i]))),start_position))
+  assign(h[i],(get(h[i])[c("gene_name","Gain","Loss","start_position")]))
+}
+
+
+haematopoieticandlymphoidtissueCancerPlots<-c("haematopoieticandlymphoidtissueCancerPlot1","haematopoieticandlymphoidtissueCancerPlot2","haematopoieticandlymphoidtissueCancerPlot3","haematopoieticandlymphoidtissueCancerPlot4","haematopoieticandlymphoidtissueCancerPlot5","haematopoieticandlymphoidtissueCancerPlot6","haematopoieticandlymphoidtissueCancerPlot7","haematopoieticandlymphoidtissueCancerPlot8","haematopoieticandlymphoidtissueCancerPlot9","haematopoieticandlymphoidtissueCancerPlot10","haematopoieticandlymphoidtissueCancerPlot11","haematopoieticandlymphoidtissueCancerPlot12","haematopoieticandlymphoidtissueCancerPlot13","haematopoieticandlymphoidtissueCancerPlot14","haematopoieticandlymphoidtissueCancerPlot15","haematopoieticandlymphoidtissueCancerPlot16","haematopoieticandlymphoidtissueCancerPlot17","haematopoieticandlymphoidtissueCancerPlot18","haematopoieticandlymphoidtissueCancerPlot19","haematopoieticandlymphoidtissueCancerPlot20","haematopoieticandlymphoidtissueCancerPlot21","haematopoieticandlymphoidtissueCancerPlot22")
+for (i in 1:22){
+  assign(haematopoieticandlymphoidtissueCancerPlots[i],
+         (ggplot(get(h[i]),aes(start_position,Gain),size=.5)+
+            geom_point()+
+            geom_point(aes(y=-Loss))+
+            xlab("Gene Start Position")+
+            ylab("Copy Number Variable")+ggtitle(paste0("chromosome",i))+
+            theme(plot.title = element_text(hjust = .5 ,size=7.5,face="bold"))+
+            theme(axis.text=element_text(size=5),
+                  axis.title=element_text(size=5,face="bold")))
+  )}
+
+##############################################
+hsex<-c("haematopoieticandlymphoidtissueCancerX","haematopoieticandlymphoidtissueCancerY")
+
+for (i in LETTERS[24:25]){
+  assign(hsex[i],data.frame(haematopoieticandlymphoidtissueCancer[c(grep(paste("\\b",i,"\\b",sep=""),haematopoieticandlymphoidtissueCancer$chromosome_name)),]))
+  assign(hsex[i],arrange(((get(hsex[i]))),start_position))
+  assign(hsex[i],(get(hsex[i])[c("gene_name","Gain","Loss","start_position")]))
+}
+haematopoieticandlymphoidtissueCancerSexPlots<-c("haematopoieticandlymphoidtissueCancerPlotX","haematopoieticandlymphoidtissueCancerPlotY")
+
+
+for (i in LETTERS[24:25]){
+  assign(paste0("haematopoieticandlymphoidtissueCancerPlot",i),
+         (ggplot(get(hsex[i]),aes(start_position,Gain),size=.5)+
+            geom_point()+
+            geom_point(aes(y=-Loss))+
+            xlab("Gene Start Position")+
+            ylab("Copy Number Variable")+ggtitle(paste0("chromosome",i))+
+            theme(plot.title = element_text(hjust = .5 ,size=7.5,face="bold"))+
+            theme(axis.text=element_text(size=5),
+                  axis.title=element_text(size=5,face="bold"))))
+}
+
+haematopoieticandlymphoidtissueCancerChromosomesPlot<-grid.arrange(haematopoieticandlymphoidtissueCancerPlot1,haematopoieticandlymphoidtissueCancerPlot2,haematopoieticandlymphoidtissueCancerPlot3,haematopoieticandlymphoidtissueCancerPlot4,haematopoieticandlymphoidtissueCancerPlot5,haematopoieticandlymphoidtissueCancerPlot6,haematopoieticandlymphoidtissueCancerPlot7,haematopoieticandlymphoidtissueCancerPlot8,haematopoieticandlymphoidtissueCancerPlot9,haematopoieticandlymphoidtissueCancerPlot10,haematopoieticandlymphoidtissueCancerPlot11,haematopoieticandlymphoidtissueCancerPlot12,haematopoieticandlymphoidtissueCancerPlot13,haematopoieticandlymphoidtissueCancerPlot14,haematopoieticandlymphoidtissueCancerPlot15,haematopoieticandlymphoidtissueCancerPlot16,haematopoieticandlymphoidtissueCancerPlot17,haematopoieticandlymphoidtissueCancerPlot18,haematopoieticandlymphoidtissueCancerPlot19,haematopoieticandlymphoidtissueCancerPlot20,haematopoieticandlymphoidtissueCancerPlot21,haematopoieticandlymphoidtissueCancerPlot22,haematopoieticandlymphoidtissueCancerSexPlotX,haematopoieticandlymphoidtissueCancerSexPlotY,nrow=6,ncol=4)
+
+#########################################################################################################
+
+largeIntestineCancer<-(left_join(largeIntestineCancer,chromosomes,by=c(gene_name="hgnc_symbol")))
+
+k<-c("largeIntestineCancer1","largeIntestineCancer2","largeIntestineCancer3","largeIntestineCancer4","largeIntestineCancer5","largeIntestineCancer6","largeIntestineCancer7","largeIntestineCancer8","largeIntestineCancer9","largeIntestineCancer10","largeIntestineCancer11","largeIntestineCancer12","largeIntestineCancer13","largeIntestineCancer14","largeIntestineCancer15","largeIntestineCancer16","largeIntestineCancer17","largeIntestineCancer18","largeIntestineCancer19","largeIntestineCancer20", "largeIntestineCancer21","largeIntestineCancer22")
+for (i in 1:22){
+  assign(k[i],data.frame(largeIntestineCancer[c(grep(paste("\\b",i,"\\b",sep=""),largeIntestineCancer$chromosome_name)),]))
+  assign(k[i],arrange(((get(k[i]))),start_position))
+  assign(k[i],(get(k[i])[c("gene_name","Gain","Loss","start_position")]))
+}
+
+
+largeIntestineCancerPlots<-c("largeIntestineCancerPlot1","largeIntestineCancerPlot2","largeIntestineCancerPlot3","largeIntestineCancerPlot4","largeIntestineCancerPlot5","largeIntestineCancerPlot6","largeIntestineCancerPlot7","largeIntestineCancerPlot8","largeIntestineCancerPlot9","largeIntestineCancerPlot10","largeIntestineCancerPlot11","largeIntestineCancerPlot12","largeIntestineCancerPlot13","largeIntestineCancerPlot14","largeIntestineCancerPlot15","largeIntestineCancerPlot16","largeIntestineCancerPlot17","largeIntestineCancerPlot18","largeIntestineCancerPlot19","largeIntestineCancerPlot20","largeIntestineCancerPlot21","largeIntestineCancerPlot22")
+for (i in 1:22){
+  
+  assign(largeIntestineCancerPlots[i],
+         (ggplot(get(k[i]),aes(start_position,Gain),size=.5)+
+            geom_point()+
+            geom_point(aes(y=-Loss))+
+            xlab("Gene Start Position")+
+            ylab("Copy Number Variable")+ggtitle(paste0("chromosome",i))+
+            theme(plot.title = element_text(hjust = .5 ,size=7.5,face="bold"))+
+            theme(axis.text=element_text(size=5),
+                  axis.title=element_text(size=5,face="bold")))
+  )}
+
+#####################################################################
+ksex<-c("largeIntestineCancerX","largeIntestineCancerY")
+
+for (i in LETTERS[24:25]){
+  assign(ksex[i],data.frame(largeIntestineCancer[c(grep(paste("\\b",i,"\\b",sep=""),largeIntestineCancer$chromosome_name)),]))
+  assign(ksex[i],arrange(((get(ksex[i]))),start_position))
+  assign(ksex[i],(get(ksex[i])[c("gene_name","Gain","Loss","start_position")]))
+}
+largeIntestineCancerSexPlots<-c("largeIntestineCancerPlotX","largeIntestineCancerPlotY")
+
+
+for (i in LETTERS[24:25]){
+  assign(paste0("largeIntestineCancerPlot",i),
+         (ggplot(get(ksex[i]),aes(start_position,Gain),size=.5)+
+            geom_point()+
+            geom_point(aes(y=-Loss))+
+            xlab("Gene Start Position")+
+            ylab("Copy Number Variable")+ggtitle(paste0("chromosome",i))+
+            theme(plot.title = element_text(hjust = .5 ,size=7.5,face="bold"))+
+            theme(axis.text=element_text(size=5),
+                  axis.title=element_text(size=5,face="bold"))))
+}
+
+largeIntestineCancerChromosomesPlot<-grid.arrange(largeIntestineCancerPlot1,largeIntestineCancerPlot2,largeIntestineCancerPlot3,largeIntestineCancerPlot4,largeIntestineCancerPlot5,largeIntestineCancerPlot6,largeIntestineCancerPlot7,largeIntestineCancerPlot8,largeIntestineCancerPlot9,largeIntestineCancerPlot10,largeIntestineCancerPlot11,largeIntestineCancerPlot12,largeIntestineCancerPlot13,largeIntestineCancerPlot14,largeIntestineCancerPlot15,largeIntestineCancerPlot16,largeIntestineCancerPlot17,largeIntestineCancerPlot18,largeIntestineCancerPlot19,largeIntestineCancerPlot20,largeIntestineCancerPlot21,largeIntestineCancerPlot22,largeIntestineCancerPlotX,largeIntestineCancerPlotY,nrow=6,ncol=4)
+
+#########################################################################################################
+
+skinCancer<-(left_join(skinCancer,chromosomes,by=c(gene_name="hgnc_symbol")))
+
+l<-c("skinCancer1","skinCancer2","skinCancer3","skinCancer4","skinCancer5","skinCancer6","skinCancer7","skinCancer8","skinCancer9","skinCancer10","skinCancer11","skinCancer12","skinCancer13","skinCancer14","skinCancer15","skinCancer16","skinCancer17","skinCancer18","skinCancer19","skinCancer20", "skinCancer21","skinCancer22")
+for (i in 1:22){
+  assign(l[i],data.frame(skinCancer[c(grep(paste("\\b",i,"\\b",sep=""),skinCancer$chromosome_name)),]))
+  assign(l[i],arrange(((get(l[i]))),start_position))
+  assign(l[i],(get(l[i])[c("gene_name","Gain","Loss","start_position")]))
+}
+
+
+skinCancerPlots<-c("skinCancerPlot1","skinCancerPlot2","skinCancerPlot3","skinCancerPlot4","skinCancerPlot5","skinCancerPlot6","skinCancerPlot7","skinCancerPlot8","skinCancerPlot9","skinCancerPlot10","skinCancerPlot11","skinCancerPlot12","skinCancerPlot13","skinCancerPlot14","skinCancerPlot15","skinCancerPlot16","skinCancerPlot17","skinCancerPlot18","skinCancerPlot19","skinCancerPlot20","skinCancerPlot21","skinCancerPlot22")
+for (i in 1:22){
+  
+  assign(skinCancerPlots[i],
+         (ggplot(get(l[i]),aes(start_position,Gain),size=.5)+
+            geom_point()+
+            geom_point(aes(y=-Loss))+
+            xlab("Gene Start Position")+
+            ylab("Copy Number Variable")+ggtitle(paste0("chromosome",i))+
+            theme(plot.title = element_text(hjust = .5 ,size=7.5,face="bold"))+
+            theme(axis.text=element_text(size=5),
+                  axis.title=element_text(size=5,face="bold")))
+  )}
+
+##############################################
+lsex<-c("skinCancerX","skinCancerY")
+
+for (i in LETTERS[24:25]){
+  assign(lsex[i],data.frame(skinCancer[c(grep(paste("\\b",i,"\\b",sep=""),skinCancer$chromosome_name)),]))
+  assign(lsex[i],arrange(((get(lsex[i]))),start_position))
+  assign(lsex[i],(get(lsex[i])[c("gene_name","Gain","Loss","start_position")]))
+}
+skinCancerSexPlots<-c("skinCancerPlotX","skinCancerPlotY")
+
+
+for (i in LETTERS[24:25]){
+  assign(paste0("skinCancerPlot",i),
+         (ggplot(get(lsex[i]),aes(start_position,Gain),size=.5)+
+            geom_point()+
+            geom_point(aes(y=-Loss))+
+            xlab("Gene Start Position")+
+            ylab("Copy Number Variable")+ggtitle(paste0("chromosome",i))+
+            theme(plot.title = element_text(hjust = .5 ,size=7.5,face="bold"))+
+            theme(axis.text=element_text(size=5),
+                  axis.title=element_text(size=5,face="bold"))))
+}
+
+skinCancerChromosomesPlot<-grid.arrange(skinCancerPlot1,skinCancerPlot2,skinCancerPlot3,skinCancerPlot4,skinCancerPlot5,skinCancerPlot6,skinCancerPlot7,skinCancerPlot8,skinCancerPlot9,skinCancerPlot10,skinCancerPlot11,skinCancerPlot12,skinCancerPlot13,skinCancerPlot14,skinCancerPlot15,skinCancerPlot16,skinCancerPlot17,skinCancerPlot18,skinCancerPlot19,skinCancerPlot20,skinCancerPlot21,skinCancerPlot22,skinCancerPlotX,skinCancerPlotY,nrow=6 ,ncol=4)
+
+#########################################################################################################
+
+ovarianCancer<-(left_join(ovarianCancer,chromosomes,by=c(gene_name="hgnc_symbol")))
+
+m<-c("ovarianCancer1","ovarianCancer2","ovarianCancer3","ovarianCancer4","ovarianCancer5","ovarianCancer6","ovarianCancer7","ovarianCancer8","ovarianCancer9","ovarianCancer10","ovarianCancer11","ovarianCancer12","ovarianCancer13","ovarianCancer14","ovarianCancer15","ovarianCancer16","ovarianCancer17","ovarianCancer18","ovarianCancer19","ovarianCancer20", "ovarianCancer21","ovarianCancer22")
+for (i in 1:22){
+  assign(m[i],data.frame(ovarianCancer[c(grep(paste("\\b",i,"\\b",sep=""),ovarianCancer$chromosome_name)),]))
+  assign(m[i],arrange(((get(m[i]))),start_position))
+  assign(m[i],(get(m[i])[c("gene_name","Gain","Loss","start_position")]))
+}
+
+
+ovarianCancerPlots<-c("ovarianCancerPlot1","ovarianCancerPlot2","ovarianCancerPlot3","ovarianCancerPlot4","ovarianCancerPlot5","ovarianCancerPlot6","ovarianCancerPlot7","ovarianCancerPlot8","ovarianCancerPlot9","ovarianCancerPlot10","ovarianCancerPlot11","ovarianCancerPlot12","ovarianCancerPlot13","ovarianCancerPlot14","ovarianCancerPlot15","ovarianCancerPlot16","ovarianCancerPlot17","ovarianCancerPlot18","ovarianCancerPlot19","ovarianCancerPlot20","ovarianCancerPlot21","ovarianCancerPlot22")
+for (i in 1:22){
+  
+  assign(ovarianCancerPlots[i],
+         (ggplot(get(m[i]),aes(start_position,Gain),size=.5)+
+            geom_point()+
+            geom_point(aes(y=-Loss))+
+            xlab("Gene Start Position")+
+            ylab("Copy Number Variable")+ggtitle(paste0("chromosome",i))+
+            theme(plot.title = element_text(hjust = .5 ,size=7.5,face="bold"))+
+            theme(axis.text=element_text(size=5),
+                  axis.title=element_text(size=5,face="bold")))
+  )}
+
+##############################################
+msex<-c("ovarianCancerX","ovarianCancerY")
+
+for (i in LETTERS[24:25]){
+  assign(msex[i],data.frame(ovarianCancer[c(grep(paste("\\b",i,"\\b",sep=""),ovarianCancer$chromosome_name)),]))
+  assign(msex[i],arrange(((get(msex[i]))),start_position))
+  assign(msex[i],(get(msex[i])[c("gene_name","Gain","Loss","start_position")]))
+}
+ovarianCancerSexPlots<-c("ovarianCancerPlotX","ovarianCancerPlotY")
+
+
+for (i in LETTERS[24:25]){
+  assign(paste0("ovarianCancerPlot",i),
+         (ggplot(get(msex[i]),aes(start_position,Gain),size=.5)+
+            geom_point()+
+            geom_point(aes(y=-Loss))+
+            xlab("Gene Start Position")+
+            ylab("Copy Number Variable")+ggtitle(paste0("chromosome",i))+
+            theme(plot.title = element_text(hjust = .5 ,size=7.5,face="bold"))+
+            theme(axis.text=element_text(size=5),
+                  axis.title=element_text(size=5,face="bold"))))
+}
+
+ovarianCancerChromosomesPlot<-grid.arrange(ovarianCancerPlot1,ovarianCancerPlot2,ovarianCancerPlot3,ovarianCancerPlot4,ovarianCancerPlot5,ovarianCancerPlot6,ovarianCancerPlot7,ovarianCancerPlot8,ovarianCancerPlot9,ovarianCancerPlot10,ovarianCancerPlot11,ovarianCancerPlot12,ovarianCancerPlot13,ovarianCancerPlot14,ovarianCancerPlot15,ovarianCancerPlot16,ovarianCancerPlot17,ovarianCancerPlot18,ovarianCancerPlot19,ovarianCancerPlot20,ovarianCancerPlot21,ovarianCancerPlot22,ovarianCancerPlotX,ovarianCancerPlotY,nrow=6,ncol=4)
+
+#########################################################################################################
+
+kidneyCancer<-(left_join(kidneyCancer,chromosomes,by=c(gene_name="hgnc_symbol")))
+
+n<-c("kidneyCancer1","kidneyCancer2","kidneyCancer3","kidneyCancer4","kidneyCancer5","kidneyCancer6","kidneyCancer7","kidneyCancer8","kidneyCancer9","kidneyCancer10","kidneyCancer11","kidneyCancer12","kidneyCancer13","kidneyCancer14","kidneyCancer15","kidneyCancer16","kidneyCancer17","kidneyCancer18","kidneyCancer19","kidneyCancer20", "kidneyCancer21","kidneyCancer22")
+for (i in 1:22){
+  assign(n[i],data.frame(kidneyCancer[c(grep(paste("\\b",i,"\\b",sep=""),kidneyCancer$chromosome_name)),]))
+  assign(n[i],arrange(((get(n[i]))),start_position))
+  assign(n[i],(get(n[i])[c("gene_name","Gain","Loss","start_position")]))
+}
+
+
+kidneyCancerPlots<-c("kidneyCancerPlot1","kidneyCancerPlot2","kidneyCancerPlot3","kidneyCancerPlot4","kidneyCancerPlot5","kidneyCancerPlot6","kidneyCancerPlot7","kidneyCancerPlot8","kidneyCancerPlot9","kidneyCancerPlot10","kidneyCancerPlot11","kidneyCancerPlot12","kidneyCancerPlot13","kidneyCancerPlot14","kidneyCancerPlot15","kidneyCancerPlot16","kidneyCancerPlot17","kidneyCancerPlot18","kidneyCancerPlot19","kidneyCancerPlot20","kidneyCancerPlot21","kidneyCancerPlot22")
+for (i in 1:22){
+  
+  assign(kidneyCancerPlots[i],
+         (ggplot(get(n[i]),aes(start_position,Gain),size=.5)+
+            geom_point()+
+            geom_point(aes(y=-Loss))+
+            xlab("Gene Start Position")+
+            ylab("Copy Number Variable")+ggtitle(paste0("chromosome",i))+
+            theme(plot.title = element_text(hjust = .5 ,size=7.5,face="bold"))+
+            theme(axis.text=element_text(size=5),
+                  axis.title=element_text(size=5,face="bold")))
+  )}
+
+##############################################
+nsex<-c("kidneyCancerX","kidneyCancerY")
+
+for (i in LETTERS[24:25]){
+  assign(nsex[i],data.frame(kidneyCancer[c(grep(paste("\\b",i,"\\b",sep=""),kidneyCancer$chromosome_name)),]))
+  assign(nsex[i],arrange(((get(nsex[i]))),start_position))
+  assign(nsex[i],(get(nsex[i])[c("gene_name","Gain","Loss","start_position")]))
+}
+kidneyCancerSexPlots<-c("kidneyCancerPlotX","kidneyCancerPlotY")
+
+
+for (i in LETTERS[24:25]){
+  assign(paste0("kidneyCancerPlot",i),
+         (ggplot(get(nsex[i]),aes(start_position,Gain),size=.5)+
+            geom_point()+
+            geom_point(aes(y=-Loss))+
+            xlab("Gene Start Position")+
+            ylab("Copy Number Variable")+ggtitle(paste0("chromosome",i))+
+            theme(plot.title = element_text(hjust = .5 ,size=7.5,face="bold"))+
+            theme(axis.text=element_text(size=5),
+                  axis.title=element_text(size=5,face="bold"))))
+}
+
+kidneyCancerChromosomesPlot<-grid.arrange(kidneyCancerPlot1,kidneyCancerPlot2,kidneyCancerPlot3,kidneyCancerPlot4,kidneyCancerPlot5,kidneyCancerPlot6,kidneyCancerPlot7,kidneyCancerPlot8,kidneyCancerPlot9,kidneyCancerPlot10,kidneyCancerPlot11,kidneyCancerPlot12,kidneyCancerPlot13,kidneyCancerPlot14,kidneyCancerPlot15,kidneyCancerPlot16,kidneyCancerPlot17,kidneyCancerPlot18,kidneyCancerPlot19,kidneyCancerPlot20,kidneyCancerPlot21,kidneyCancerPlot22,kidneyCancerPlotX,kidneyCancerPlotY,nrow=6,col=4)
+
+#########################################################################################################
+
+upperAerodigestiveTractCancer<-(left_join(upperAerodigestiveTractCancer,chromosomes,by=c(gene_name="hgnc_symbol")))
+
+o<-c("upperAerodigestiveTractCancer1","upperAerodigestiveTractCancer2","upperAerodigestiveTractCancer3","upperAerodigestiveTractCancer4","upperAerodigestiveTractCancer5","upperAerodigestiveTractCancer6","upperAerodigestiveTractCancer7","upperAerodigestiveTractCancer8","upperAerodigestiveTractCancer9","upperAerodigestiveTractCancer10","upperAerodigestiveTractCancer11","upperAerodigestiveTractCancer12","upperAerodigestiveTractCancer13","upperAerodigestiveTractCancer14","upperAerodigestiveTractCancer15","upperAerodigestiveTractCancer16","upperAerodigestiveTractCancer17","upperAerodigestiveTractCancer18","upperAerodigestiveTractCancer19","upperAerodigestiveTractCancer20", "upperAerodigestiveTractCancer21","upperAerodigestiveTractCancer22")
+for (i in 1:22){
+  assign(o[i],data.frame(upperAerodigestiveTractCancer[c(grep(paste("\\b",i,"\\b",sep=""),upperAerodigestiveTractCancer$chromosome_name)),]))
+  assign(o[i],arrange(((get(o[i]))),start_position))
+  assign(o[i],(get(o[i])[c("gene_name","Gain","Loss","start_position")]))
+}
+
+
+upperAerodigestiveTractCancerPlots<-c("upperAerodigestiveTractCancerPlot1","upperAerodigestiveTractCancerPlot2","upperAerodigestiveTractCancerPlot3","upperAerodigestiveTractCancerPlot4","upperAerodigestiveTractCancerPlot5","upperAerodigestiveTractCancerPlot6","upperAerodigestiveTractCancerPlot7","upperAerodigestiveTractCancerPlot8","upperAerodigestiveTractCancerPlot9","upperAerodigestiveTractCancerPlot10","upperAerodigestiveTractCancerPlot11","upperAerodigestiveTractCancerPlot12","upperAerodigestiveTractCancerPlot13","upperAerodigestiveTractCancerPlot14","upperAerodigestiveTractCancerPlot15","upperAerodigestiveTractCancerPlot16","upperAerodigestiveTractCancerPlot17","upperAerodigestiveTractCancerPlot18","upperAerodigestiveTractCancerPlot19","upperAerodigestiveTractCancerPlot20","upperAerodigestiveTractCancerPlot21","upperAerodigestiveTractCancerPlot22")
+for (i in 1:22){
+  
+  assign(upperAerodigestiveTractCancerPlots[i],
+         (ggplot(get(o[i]),aes(start_position,Gain),size=.5)+
+            geom_point()+
+            geom_point(aes(y=-Loss))+
+            xlab("Gene Start Position")+
+            ylab("Copy Number Variable")+ggtitle(paste0("chromosome",i))+
+            theme(plot.title = element_text(hjust = .5 ,size=7.5,face="bold"))+
+            theme(axis.text=element_text(size=5),
+                  axis.title=element_text(size=5,face="bold")))
+  )}
+
+##############################################
+osex<-c("upperAerodigestiveTractCancerX","upperAerodigestiveTractCancerY")
+
+for (i in LETTERS[24:25]){
+  assign(osex[i],data.frame(upperAerodigestiveTractCancer[c(grep(paste("\\b",i,"\\b",sep=""),upperAerodigestiveTractCancer$chromosome_name)),]))
+  assign(osex[i],arrange(((get(osex[i]))),start_position))
+  assign(osex[i],(get(osex[i])[c("gene_name","Gain","Loss","start_position")]))
+}
+upperAerodigestiveTractCancerSexPlots<-c("upperAerodigestiveTractCancerPlotX","upperAerodigestiveTractCancerPlotY")
+
+
+for (i in LETTERS[24:25]){
+  assign(paste0("upperAerodigestiveTractCancerPlot",i),
+         (ggplot(get(osex[i]),aes(start_position,Gain),size=.5)+
+            geom_point()+
+            geom_point(aes(y=-Loss))+
+            xlab("Gene Start Position")+
+            ylab("Copy Number Variable")+ggtitle(paste0("chromosome",i))+
+            theme(plot.title = element_text(hjust = .5 ,size=7.5,face="bold"))+
+            theme(axis.text=element_text(size=5),
+                  axis.title=element_text(size=5,face="bold"))))
+}
+
+upperAerodigestiveTractCancerChromosomesPlot<-grid.arrange(upperAerodigestiveTractCancerPlot1,upperAerodigestiveTractCancerPlot2,upperAerodigestiveTractCancerPlot3,upperAerodigestiveTractCancerPlot4,upperAerodigestiveTractCancerPlot5,upperAerodigestiveTractCancerPlot6,upperAerodigestiveTractCancerPlot7,upperAerodigestiveTractCancerPlot8,upperAerodigestiveTractCancerPlot9,upperAerodigestiveTractCancerPlot10,upperAerodigestiveTractCancerPlot11,upperAerodigestiveTractCancerPlot12,upperAerodigestiveTractCancerPlot13,upperAerodigestiveTractCancerPlot14,upperAerodigestiveTractCancerPlot15,upperAerodigestiveTractCancerPlot16,upperAerodigestiveTractCancerPlot17,upperAerodigestiveTractCancerPlot18,upperAerodigestiveTractCancerPlot19,upperAerodigestiveTractCancerPlot20,upperAerodigestiveTractCancerPlot21,upperAerodigestiveTractCancerPlot22,upperAerodigestiveTractCancerPlotX,upperAerodigestiveTractCancerPlotY,nrow=6,ncol=4)
+
+#########################################################################################################
+
+oesophagusCancer<-(left_join(oesophagusCancer,chromosomes,by=c(gene_name="hgnc_symbol")))
+
+p<-c("oesophagusCancer1","oesophagusCancer2","oesophagusCancer3","oesophagusCancer4","oesophagusCancer5","oesophagusCancer6","oesophagusCancer7","oesophagusCancer8","oesophagusCancer9","oesophagusCancer10","oesophagusCancer11","oesophagusCancer12","oesophagusCancer13","oesophagusCancer14","oesophagusCancer15","oesophagusCancer16","oesophagusCancer17","oesophagusCancer18","oesophagusCancer19","oesophagusCancer20", "oesophagusCancer21","oesophagusCancer22")
+for (i in 1:22){
+  assign(p[i],data.frame(oesophagusCancer[c(grep(paste("\\b",i,"\\b",sep=""),oesophagusCancer$chromosome_name)),]))
+  assign(p[i],arrange(((get(p[i]))),start_position))
+  assign(p[i],(get(p[i])[c("gene_name","Gain","Loss","start_position")]))
+}
+
+
+oesophagusCancerPlots<-c("oesophagusCancerPlot1","oesophagusCancerPlot2","oesophagusCancerPlot3","oesophagusCancerPlot4","oesophagusCancerPlot5","oesophagusCancerPlot6","oesophagusCancerPlot7","oesophagusCancerPlot8","oesophagusCancerPlot9","oesophagusCancerPlot10","oesophagusCancerPlot11","oesophagusCancerPlot12","oesophagusCancerPlot13","oesophagusCancerPlot14","oesophagusCancerPlot15","oesophagusCancerPlot16","oesophagusCancerPlot17","oesophagusCancerPlot18","oesophagusCancerPlot19","oesophagusCancerPlot20","oesophagusCancerPlot21","oesophagusCancerPlot22")
+for (i in 1:22){
+  
+  assign(oesophagusCancerPlots[i],
+         (ggplot(get(p[i]),aes(start_position,Gain),size=.5)+
+            geom_point()+
+            geom_point(aes(y=-Loss))+
+            xlab("Gene Start Position")+
+            ylab("Copy Number Variable")+ggtitle(paste0("chromosome",i))+
+            theme(plot.title = element_text(hjust = .5 ,size=7.5,face="bold"))+
+            theme(axis.text=element_text(size=5),
+                  axis.title=element_text(size=5,face="bold")))
+  )}
+
+##############################################
+psex<-c("oesophagusCancerX","oesophagusCancerY")
+
+for (i in LETTERS[24:25]){
+  assign(psex[i],data.frame(oesophagusCancer[c(grep(paste("\\b",i,"\\b",sep=""),oesophagusCancer$chromosome_name)),]))
+  assign(psex[i],arrange(((get(psex[i]))),start_position))
+  assign(psex[i],(get(psex[i])[c("gene_name","Gain","Loss","start_position")]))
+}
+oesophagusCancerSexPlots<-c("oesophagusCancerPlotX","oesophagusCancerPlotY")
+
+
+for (i in LETTERS[24:25]){
+  assign(paste0("oesophagusCancerPlot",i),
+         (ggplot(get(psex[i]),aes(start_position,Gain),size=.5)+
+            geom_point()+
+            geom_point(aes(y=-Loss))+
+            xlab("Gene Start Position")+
+            ylab("Copy Number Variable")+ggtitle(paste0("chromosome",i))+
+            theme(plot.title = element_text(hjust = .5 ,size=7.5,face="bold"))+
+            theme(axis.text=element_text(size=5),
+                  axis.title=element_text(size=5,face="bold"))))
+}
+
+oesophagusCancerChromosomesPlot<-grid.arrange(oesophagusCancerPlot1,oesophagusCancerPlot2,oesophagusCancerPlot3,oesophagusCancerPlot4,oesophagusCancerPlot5,oesophagusCancerPlot6,oesophagusCancerPlot7,oesophagusCancerPlot8,oesophagusCancerPlot9,oesophagusCancerPlot10,oesophagusCancerPlot11,oesophagusCancerPlot12,oesophagusCancerPlot13,oesophagusCancerPlot14,oesophagusCancerPlot15,oesophagusCancerPlot16,oesophagusCancerPlot17,oesophagusCancerPlot18,oesophagusCancerPlot19,oesophagusCancerPlot20,oesophagusCancerPlot21,oesophagusCancerPlot22,oesophagusCancerPlotX,oesophagusCancerPlotY,nrow=6,ncol=4)
+
+#########################################################################################################
+
+endometrialCancer<-(left_join(endometrialCancer,chromosomes,by=c(gene_name="hgnc_symbol")))
+
+s<-c("endometrialCancer1","endometrialCancer2","endometrialCancer3","endometrialCancer4","endometrialCancer5","endometrialCancer6","endometrialCancer7","endometrialCancer8","endometrialCancer9","endometrialCancer10","endometrialCancer11","endometrialCancer12","endometrialCancer13","endometrialCancer14","endometrialCancer15","endometrialCancer16","endometrialCancer17","endometrialCancer18","endometrialCancer19","endometrialCancer20", "endometrialCancer21","endometrialCancer22")
+for (i in 1:22){
+  assign(s[i],data.frame(endometrialCancer[c(grep(paste("\\b",i,"\\b",sep=""),endometrialCancer$chromosome_name)),]))
+  assign(s[i],arrange(((get(s[i]))),start_position))
+  assign(s[i],(get(s[i])[c("gene_name","Gain","Loss","start_position")]))
+}
+
+
+endometrialCancerPlots<-c("endometrialCancerPlot1","endometrialCancerPlot2","endometrialCancerPlot3","endometrialCancerPlot4","endometrialCancerPlot5","endometrialCancerPlot6","endometrialCancerPlot7","endometrialCancerPlot8","endometrialCancerPlot9","endometrialCancerPlot10","endometrialCancerPlot11","endometrialCancerPlot12","endometrialCancerPlot13","endometrialCancerPlot14","endometrialCancerPlot15","endometrialCancerPlot16","endometrialCancerPlot17","endometrialCancerPlot18","endometrialCancerPlot19","endometrialCancerPlot20","endometrialCancerPlot21","endometrialCancerPlot22")
+for (i in 1:22){
+  
+  assign(endometrialCancerPlots[i],
+         (ggplot(get(s[i]),aes(start_position,Gain),size=.5)+
+            geom_point()+
+            geom_point(aes(y=-Loss))+
+            xlab("Gene Start Position")+
+            ylab("Copy Number Variable")+ggtitle(paste0("chromosome",i))+
+            theme(plot.title = element_text(hjust = .5 ,size=7.5,face="bold"))+
+            theme(axis.text=element_text(size=5),
+                  axis.title=element_text(size=5,face="bold")))
+  )}
+
+##############################################
+ssex<-c("endometrialCancerX","endometrialCancerY")
+
+for (i in LETTERS[24:25]){
+  assign(ssex[i],data.frame(endometrialCancer[c(grep(paste("\\b",i,"\\b",sep=""),endometrialCancer$chromosome_name)),]))
+  assign(ssex[i],arrange(((get(ssex[i]))), start_position))
+  assign(ssex[i],(get(ssex[i])[c("gene_name","Gain","Loss","start_position")]))
+}
+
+endometrialCancerSexPlots<-c("endometrialCancerPlotX","endometrialCancerPlotY")
+
+
+for (i in LETTERS[24:25]){
+  assign(paste0("endometrialCancerPlot",i),
+         (ggplot(get(ssex[i]),aes(start_position,Gain),size=.5)+
+            geom_point()+
+            geom_point(aes(y=-Loss))+
+            xlab("Gene Start Position")+
+            ylab("Copy Number Variable")+ggtitle(paste0("chromosome",i))+
+            theme(plot.title = element_text(hjust = .5 ,size=7.5,face="bold"))+
+            theme(axis.text=element_text(size=5),
+                  axis.title=element_text(size=5,face="bold"))))
+}
+
+
+
+endometrialCancerChromosomesPlot<-grid.arrange(endometrialCancerPlot1,endometrialCancerPlot2,endometrialCancerPlot3,endometrialCancerPlot4,endometrialCancerPlot5,endometrialCancerPlot6,endometrialCancerPlot7,endometrialCancerPlot8,endometrialCancerPlot9,endometrialCancerPlot10,endometrialCancerPlot11,endometrialCancerPlot12,endometrialCancerPlot13,endometrialCancerPlot14,endometrialCancerPlot15,endometrialCancerPlot16,endometrialCancerPlot17,endometrialCancerPlot18,endometrialCancerPlot19,endometrialCancerPlot20,endometrialCancerPlot21,endometrialCancerPlot22,endometrialCancerPlotX,endometrialCancerPlotY,nrow=6,ncol=4)
+
+#########################################################################################################
+
+prostateCancer<-(left_join(prostateCancer,chromosomes,by=c(gene_name="hgnc_symbol")))
+
+u<-c("prostateCancer1","prostateCancer2","prostateCancer3","prostateCancer4","prostateCancer5","prostateCancer6","prostateCancer7","prostateCancer8","prostateCancer9","prostateCancer10","prostateCancer11","prostateCancer12","prostateCancer13","prostateCancer14","prostateCancer15","prostateCancer16","prostateCancer17","prostateCancer18","prostateCancer19","prostateCancer20", "prostateCancer21","prostateCancer22")
+for (i in 1:22){
+  assign(u[i],data.frame(prostateCancer[c(grep(paste("\\b",i,"\\b",sep=""),prostateCancer$chromosome_name)),]))
+  assign(u[i],arrange(((get(u[i]))),start_position))
+  assign(u[i],(get(u[i])[c("gene_name","Gain","Loss","start_position")]))
+}
+
+
+prostateCancerPlots<-c("prostateCancerPlot1","prostateCancerPlot2","prostateCancerPlot3","prostateCancerPlot4","prostateCancerPlot5","prostateCancerPlot6","prostateCancerPlot7","prostateCancerPlot8","prostateCancerPlot9","prostateCancerPlot10","prostateCancerPlot11","prostateCancerPlot12","prostateCancerPlot13","prostateCancerPlot14","prostateCancerPlot15","prostateCancerPlot16","prostateCancerPlot17","prostateCancerPlot18","prostateCancerPlot19","prostateCancerPlot20","prostateCancerPlot21","prostateCancerPlot22")
+for (i in 1:22){
+  
+  assign(prostateCancerPlots[i],
+         (ggplot(get(u[i]),aes(start_position,Gain),size=.5)+
+            geom_point()+
+            geom_point(aes(y=-Loss))+
+            xlab("Gene Start Position")+
+            ylab("Copy Number Variable")+ggtitle(paste0("chromosome",i))+
+            theme(plot.title = element_text(hjust = .5 ,size=7.5,face="bold"))+
+            theme(axis.text=element_text(size=5),
+                  axis.title=element_text(size=5,face="bold")))
+  )}
+
+##############################################
+usex<-c("prostateCancerX","prostateCancerY")
+
+for (i in LETTERS[24:25]){
+  assign(usex[i],data.frame(prostateCancer[c(grep(paste("\\b",i,"\\b",sep=""),prostateCancer$chromosome_name)),]))
+  assign(usex[i],arrange(((get(usex[i]))),start_position))
+  assign(usex[i],(get(usex[i])[c("gene_name","Gain","Loss","start_position")]))
+}
+prostateCancerSexPlots<-c("prostateCancerPlotX","prostateCancerPlotY")
+
+
+for (i in LETTERS[24:25]){
+  assign(paste0("prostateCancerPlot",i),
+         (ggplot(get(usex[i]),aes(start_position,Gain),size=.5)+
+            geom_point()+
+            geom_point(aes(y=-Loss))+
+            xlab("Gene Start Position")+
+            ylab("Copy Number Variable")+ggtitle(paste0("chromosome",i))+
+            theme(plot.title = element_text(hjust = .5 ,size=7.5,face="bold"))+
+            theme(axis.text=element_text(size=5),
+                  axis.title=element_text(size=5,face="bold"))))
+}
+
+prostateCancerChromosomesPlot<-grid.arrange(prostateCancerPlot1,prostateCancerPlot2,prostateCancerPlot3,prostateCancerPlot4,prostateCancerPlot5,prostateCancerPlot6,prostateCancerPlot7,prostateCancerPlot8,prostateCancerPlot9,prostateCancerPlot10,prostateCancerPlot11,prostateCancerPlot12,prostateCancerPlot13,prostateCancerPlot14,prostateCancerPlot15,prostateCancerPlot16,prostateCancerPlot17,prostateCancerPlot18,prostateCancerPlot19,prostateCancerPlot20,prostateCancerPlot21,prostateCancerPlot22,prostateCancerPlotX,prostateCancerPlotY,nrow=6,ncol=4)
+
+#########################################################################################################
+
+thyroidCancer<-(left_join(thyroidCancer,chromosomes,by=c(gene_name="hgnc_symbol")))
+
+v<-c("thyroidCancer1","thyroidCancer2","thyroidCancer3","thyroidCancer4","thyroidCancer5","thyroidCancer6","thyroidCancer7","thyroidCancer8","thyroidCancer9","thyroidCancer10","thyroidCancer11","thyroidCancer12","thyroidCancer13","thyroidCancer14","thyroidCancer15","thyroidCancer16","thyroidCancer17","thyroidCancer18","thyroidCancer19","thyroidCancer20", "thyroidCancer21","thyroidCancer22")
+for (i in 1:22){
+  assign(v[i],data.frame(thyroidCancer[c(grep(paste("\\b",i,"\\b",sep=""),thyroidCancer$chromosome_name)),]))
+  assign(v[i],arrange(((get(v[i]))),start_position))
+  assign(v[i],(get(v[i])[c("gene_name","Gain","Loss","start_position")]))
+}
+
+
+thyroidCancerPlots<-c("thyroidCancerPlot1","thyroidCancerPlot2","thyroidCancerPlot3","thyroidCancerPlot4","thyroidCancerPlot5","thyroidCancerPlot6","thyroidCancerPlot7","thyroidCancerPlot8","thyroidCancerPlot9","thyroidCancerPlot10","thyroidCancerPlot11","thyroidCancerPlot12","thyroidCancerPlot13","thyroidCancerPlot14","thyroidCancerPlot15","thyroidCancerPlot16","thyroidCancerPlot17","thyroidCancerPlot18","thyroidCancerPlot19","thyroidCancerPlot20","thyroidCancerPlot21","thyroidCancerPlot22")
+for (i in 1:22){
+  
+  assign(thyroidCancerPlots[i],
+         (ggplot(get(v[i]),aes(start_position,Gain),size=.5)+
+            geom_point()+
+            geom_point(aes(y=-Loss))+
+            xlab("Gene Start Position")+
+            ylab("Copy Number Variable")+ggtitle(paste0("chromosome",i))+
+            theme(plot.title = element_text(hjust = .5 ,size=7.5,face="bold"))+
+            theme(axis.text=element_text(size=5),
+                  axis.title=element_text(size=5,face="bold")))
+  )}
+
+##############################################
+vsex<-c("thyroidCancerX","thyroidCancerY")
+
+for (i in LETTERS[24:25]){
+  assign(vsex[i],data.frame(thyroidCancer[c(grep(paste("\\b",i,"\\b",sep=""),thyroidCancer$chromosome_name)),]))
+  assign(vsex[i],arrange(((get(vsex[i]))),start_position))
+  assign(vsex[i],(get(vsex[i])[c("gene_name","Gain","Loss","start_position")]))
+}
+thyroidCancerSexPlots<-c("thyroidCancerPlotX","thyroidCancerPlotY")
+
+
+for (i in LETTERS[24:25]){
+  assign(paste0("thyroidCancerPlot",i),
+         (ggplot(get(vsex[i]),aes(start_position,Gain),size=.5)+
+            geom_point()+
+            geom_point(aes(y=-Loss))+
+            xlab("Gene Start Position")+
+            ylab("Copy Number Variable")+ggtitle(paste0("chromosome",i))+
+            theme(plot.title = element_text(hjust = .5 ,size=7.5,face="bold"))+
+            theme(axis.text=element_text(size=5),
+                  axis.title=element_text(size=5,face="bold"))))
+}
+
+thyroidCancerChromosomesPlot<-grid.arrange(thyroidCancerPlot1,thyroidCancerPlot2,thyroidCancerPlot3,thyroidCancerPlot4,thyroidCancerPlot5,thyroidCancerPlot6,thyroidCancerPlot7,thyroidCancerPlot8,thyroidCancerPlot9,thyroidCancerPlot10,thyroidCancerPlot11,thyroidCancerPlot12,thyroidCancerPlot13,thyroidCancerPlot14,thyroidCancerPlot15,thyroidCancerPlot16,thyroidCancerPlot17,thyroidCancerPlot18,thyroidCancerPlot19,thyroidCancerPlot20,thyroidCancerPlot21,thyroidCancerPlot22,thyroidCancerPlotX,thyroidCancerPlotY,nrow=6,ncol=4)
+
+#########################################################################################################
+
+softTissueCancer<-(left_join(softTissueCancer,chromosomes,by=c(gene_name="hgnc_symbol")))
+
+w<-c("softTissueCancer1","softTissueCancer2","softTissueCancer3","softTissueCancer4","softTissueCancer5","softTissueCancer6","softTissueCancer7","softTissueCancer8","softTissueCancer9","softTissueCancer10","softTissueCancer11","softTissueCancer12","softTissueCancer13","softTissueCancer14","softTissueCancer15","softTissueCancer16","softTissueCancer17","softTissueCancer18","softTissueCancer19","softTissueCancer20", "softTissueCancer21","softTissueCancer22")
+for (i in 1:22){
+  assign(w[i],data.frame(softTissueCancer[c(grep(paste("\\b",i,"\\b",sep=""),softTissueCancer$chromosome_name)),]))
+  assign(w[i],arrange(((get(w[i]))),start_position))
+  assign(w[i],(get(w[i])[c("gene_name","Gain","Loss","start_position")]))
+}
+
+
+softTissueCancerPlots<-c("softTissueCancerPlot1","softTissueCancerPlot2","softTissueCancerPlot3","softTissueCancerPlot4","softTissueCancerPlot5","softTissueCancerPlot6","softTissueCancerPlot7","softTissueCancerPlot8","softTissueCancerPlot9","softTissueCancerPlot10","softTissueCancerPlot11","softTissueCancerPlot12","softTissueCancerPlot13","softTissueCancerPlot14","softTissueCancerPlot15","softTissueCancerPlot16","softTissueCancerPlot17","softTissueCancerPlot18","softTissueCancerPlot19","softTissueCancerPlot20","softTissueCancerPlot21","softTissueCancerPlot22")
+for (i in 1:22){
+  
+  assign(softTissueCancerPlots[i],
+         (ggplot(get(w[i]),aes(start_position,Gain),size=.5)+
+            geom_point()+
+            geom_point(aes(y=-Loss))+
+            xlab("Gene Start Position")+
+            ylab("Copy Number Variable")+ggtitle(paste0("chromosome",i))+
+            theme(plot.title = element_text(hjust = .5 ,size=7.5,face="bold"))+
+            theme(axis.text=element_text(size=5),
+                  axis.title=element_text(size=5,face="bold")))
+  )}
+
+##############################################
+wsex<-c("softTissueCancerX","softTissueCancerY")
+
+for (i in LETTERS[24:25]){
+  assign(wsex[i],data.frame(softTissueCancer[c(grep(paste("\\b",i,"\\b",sep=""),softTissueCancer$chromosome_name)),]))
+  assign(wsex[i],arrange(((get(wsex[i]))),start_position))
+  assign(wsex[i],(get(wsex[i])[c("gene_name","Gain","Loss","start_position")]))
+}
+softTissueCancerSexPlots<-c("softTissueCancerPlotX","softTissueCancerPlotY")
+
+
+for (i in LETTERS[24:25]){
+  assign(paste0("softTissueCancerPlot",i),
+         (ggplot(get(wsex[i]),aes(start_position,Gain),size=.5)+
+            geom_point()+
+            geom_point(aes(y=-Loss))+
+            xlab("Gene Start Position")+
+            ylab("Copy Number Variable")+ggtitle(paste0("chromosome",i))+
+            theme(plot.title = element_text(hjust = .5 ,size=7.5,face="bold"))+
+            theme(axis.text=element_text(size=5),
+                  axis.title=element_text(size=5,face="bold"))))
+}
+
+softTissueCancerChromosomesPlot<-grid.arrange(softTissueCancerPlot1,softTissueCancerPlot2,softTissueCancerPlot3,softTissueCancerPlot4,softTissueCancerPlot5,softTissueCancerPlot6,softTissueCancerPlot7,softTissueCancerPlot8,softTissueCancerPlot9,softTissueCancerPlot10,softTissueCancerPlot11,softTissueCancerPlot12,softTissueCancerPlot13,softTissueCancerPlot14,softTissueCancerPlot15,softTissueCancerPlot16,softTissueCancerPlot17,softTissueCancerPlot18,softTissueCancerPlot19,softTissueCancerPlot20,softTissueCancerPlot21,softTissueCancerPlot22,softTissueCancerPlotX,softTissueCancerPlotY,nrow=6,ncol=4)
+
+#########################################################################################################
+
+testicularCancer<-(left_join(testicularCancer,chromosomes,by=c(gene_name="hgnc_symbol")))
+
+x<-c("testicularCancer1","testicularCancer2","testicularCancer3","testicularCancer4","testicularCancer5","testicularCancer6","testicularCancer7","testicularCancer8","testicularCancer9","testicularCancer10","testicularCancer11","testicularCancer12","testicularCancer13","testicularCancer14","testicularCancer15","testicularCancer16","testicularCancer17","testicularCancer18","testicularCancer19","testicularCancer20", "testicularCancer21","testicularCancer22")
+for (i in 1:22){
+  assign(x[i],data.frame(testicularCancer[c(grep(paste("\\b",i,"\\b",sep=""),testicularCancer$chromosome_name)),]))
+  assign(x[i],arrange(((get(x[i]))),start_position))
+  assign(x[i],(get(x[i])[c("gene_name","Gain","Loss","start_position")]))
+}
+
+
+testicularCancerPlots<-c("testicularCancerPlot1","testicularCancerPlot2","testicularCancerPlot3","testicularCancerPlot4","testicularCancerPlot5","testicularCancerPlot6","testicularCancerPlot7","testicularCancerPlot8","testicularCancerPlot9","testicularCancerPlot10","testicularCancerPlot11","testicularCancerPlot12","testicularCancerPlot13","testicularCancerPlot14","testicularCancerPlot15","testicularCancerPlot16","testicularCancerPlot17","testicularCancerPlot18","testicularCancerPlot19","testicularCancerPlot20","testicularCancerPlot21","testicularCancerPlot22")
+for (i in 1:22){
+  
+  assign(testicularCancerPlots[i],
+         (ggplot(get(x[i]),aes(start_position,Gain),size=.5)+
+            geom_point()+
+            geom_point(aes(y=-Loss))+
+            xlab("Gene Start Position")+
+            ylab("Copy Number Variable")+ggtitle(paste0("chromosome",i))+
+            theme(plot.title = element_text(hjust = .5 ,size=7.5,face="bold"))+
+            theme(axis.text=element_text(size=5),
+                  axis.title=element_text(size=5,face="bold")))
+  )}
+
+##############################################
+xsex<-c("testicularCancerX","testicularCancerY")
+
+for (i in LETTERS[24:25]){
+  assign(xsex[i],data.frame(testicularCancer[c(grep(paste("\\b",i,"\\b",sep=""),testicularCancer$chromosome_name)),]))
+  assign(xsex[i],arrange(((get(xsex[i]))),start_position))
+  assign(xsex[i],(get(xsex[i])[c("gene_name","Gain","Loss","start_position")]))
+}
+testicularCancerSexPlots<-c("testicularCancerPlotX","testicularCancerPlotY")
+
+
+for (i in LETTERS[24:25]){
+  assign(paste0("testicularCancerPlot",i),
+         (ggplot(get(xsex[i]),aes(start_position,Gain),size=.5)+
+            geom_point()+
+            geom_point(aes(y=-Loss))+
+            xlab("Gene Start Position")+
+            ylab("Copy Number Variable")+ggtitle(paste0("chromosome",i))+
+            theme(plot.title = element_text(hjust = .5 ,size=7.5,face="bold"))+
+            theme(axis.text=element_text(size=5),
+                  axis.title=element_text(size=5,face="bold"))))
+}
+
+testicularCancerChromosomesPlot<-grid.arrange(testicularCancerPlot1,testicularCancerPlot2,testicularCancerPlot3,testicularCancerPlot4,testicularCancerPlot5,testicularCancerPlot6,testicularCancerPlot7,testicularCancerPlot8,testicularCancerPlot9,testicularCancerPlot10,testicularCancerPlot11,testicularCancerPlot12,testicularCancerPlot13,testicularCancerPlot14,testicularCancerPlot15,testicularCancerPlot16,testicularCancerPlot17,testicularCancerPlot18,testicularCancerPlot19,testicularCancerPlot20,testicularCancerPlot21,testicularCancerPlot22,testicularCancerPlotX,testicularCancerPlotY,nrow=6,ncol=4)
+
+#########################################################################################################
+
+boneCancer<-(left_join(boneCancer,chromosomes,by=c(gene_name="hgnc_symbol")))
+
+y<-c("boneCancer1","boneCancer2","boneCancer3","boneCancer4","boneCancer5","boneCancer6","boneCancer7","boneCancer8","boneCancer9","boneCancer10","boneCancer11","boneCancer12","boneCancer13","boneCancer14","boneCancer15","boneCancer16","boneCancer17","boneCancer18","boneCancer19","boneCancer20", "boneCancer21","boneCancer22")
+for (i in 1:22){
+  assign(y[i],data.frame(boneCancer[c(grep(paste("\\b",i,"\\b",sep=""),boneCancer$chromosome_name)),]))
+  assign(y[i],arrange(((get(y[i]))),start_position))
+  assign(y[i],(get(y[i])[c("gene_name","Gain","Loss","start_position")]))
+}
+
+
+boneCancerPlots<-c("boneCancerPlot1","boneCancerPlot2","boneCancerPlot3","boneCancerPlot4","boneCancerPlot5","boneCancerPlot6","boneCancerPlot7","boneCancerPlot8","boneCancerPlot9","boneCancerPlot10","boneCancerPlot11","boneCancerPlot12","boneCancerPlot13","boneCancerPlot14","boneCancerPlot15","boneCancerPlot16","boneCancerPlot17","boneCancerPlot18","boneCancerPlot19","boneCancerPlot20","boneCancerPlot21","boneCancerPlot22")
+for (i in 1:22){
+  
+  assign(boneCancerPlots[i],
+         (ggplot(get(y[i]),aes(start_position,Gain),size=.5)+
+            geom_point()+
+            geom_point(aes(y=-Loss))+
+            xlab("Gene Start Position")+
+            ylab("Copy Number Variable")+ggtitle(paste0("chromosome",i))+
+            theme(plot.title = element_text(hjust = .5 ,size=7.5,face="bold"))+
+            theme(axis.text=element_text(size=5),
+                  axis.title=element_text(size=5,face="bold")))
+  )}
+
+##############################################
+ysex<-c("boneCancerX","boneCancerY")
+
+for (i in LETTERS[24:25]){
+  assign(ysex[i],data.frame(boneCancer[c(grep(paste("\\b",i,"\\b",sep=""),boneCancer$chromosome_name)),]))
+  assign(ysex[i],arrange(((get(ysex[i]))),start_position))
+  assign(ysex[i],(get(ysex[i])[c("gene_name","Gain","Loss","start_position")]))
+}
+boneCancerSexPlots<-c("boneCancerPlotX","boneCancerPlotY")
+
+
+for (i in LETTERS[24:25]){
+  assign(paste0("boneCancerPlot",i),
+         (ggplot(get(ysex[i]),aes(start_position,Gain),size=.5)+
+            geom_point()+
+            geom_point(aes(y=-Loss))+
+            xlab("Gene Start Position")+
+            ylab("Copy Number Variable")+ggtitle(paste0("chromosome",i))+
+            theme(plot.title = element_text(hjust = .5 ,size=7.5,face="bold"))+
+            theme(axis.text=element_text(size=5),
+                  axis.title=element_text(size=5,face="bold"))))
+}
+
+boneCancerChromosomesPlot<-grid.arrange(boneCancerPlot1,boneCancerPlot2,boneCancerPlot3,boneCancerPlot4,boneCancerPlot5,boneCancerPlot6,boneCancerPlot7,boneCancerPlot8,boneCancerPlot9,boneCancerPlot10,boneCancerPlot11,boneCancerPlot12,boneCancerPlot13,boneCancerPlot14,boneCancerPlot15,boneCancerPlot16,boneCancerPlot17,boneCancerPlot18,boneCancerPlot19,boneCancerPlot20,boneCancerPlot21,boneCancerPlot22,boneCancerPlotX,boneCancerSexPlotY,nrow=6,ncol=4)
+
+#########################################################################################################
+
+pleuralCancer<-(left_join(pleuralCancer,chromosomes,by=c(gene_name="hgnc_symbol")))
+
+z<-c("pleuralCancer1","pleuralCancer2","pleuralCancer3","pleuralCancer4","pleuralCancer5","pleuralCancer6","pleuralCancer7","pleuralCancer8","pleuralCancer9","pleuralCancer10","pleuralCancer11","pleuralCancer12","pleuralCancer13","pleuralCancer14","pleuralCancer15","pleuralCancer16","pleuralCancer17","pleuralCancer18","pleuralCancer19","pleuralCancer20", "pleuralCancer21","pleuralCancer22")
+for (i in 1:22){
+  assign(z[i],data.frame(pleuralCancer[c(grep(paste("\\b",i,"\\b",sep=""),pleuralCancer$chromosome_name)),]))
+  assign(z[i],arrange(((get(z[i]))),start_position))
+  assign(z[i],(get(z[i])[c("gene_name","Gain","Loss","start_position")]))
+}
+
+
+pleuralCancerPlots<-c("pleuralCancerPlot1","pleuralCancerPlot2","pleuralCancerPlot3","pleuralCancerPlot4","pleuralCancerPlot5","pleuralCancerPlot6","pleuralCancerPlot7","pleuralCancerPlot8","pleuralCancerPlot9","pleuralCancerPlot10","pleuralCancerPlot11","pleuralCancerPlot12","pleuralCancerPlot13","pleuralCancerPlot14","pleuralCancerPlot15","pleuralCancerPlot16","pleuralCancerPlot17","pleuralCancerPlot18","pleuralCancerPlot19","pleuralCancerPlot20","pleuralCancerPlot21","pleuralCancerPlot22")
+for (i in 1:22){
+  
+  assign(pleuralCancerPlots[i],
+         (ggplot(get(z[i]),aes(start_position,Gain),size=.5)+
+            geom_point()+
+            geom_point(aes(y=-Loss))+
+            xlab("Gene Start Position")+
+            ylab("Copy Number Variable")+ggtitle(paste0("chromosome",i))+
+            theme(plot.title = element_text(hjust = .5 ,size=7.5,face="bold"))+
+            theme(axis.text=element_text(size=5),
+                  axis.title=element_text(size=5,face="bold")))
+  )}
+
+##############################################
+zsex<-c("pleuralCancerX","pleuralCancerY")
+
+for (i in LETTERS[24:25]){
+  assign(zsex[i],data.frame(pleuralCancer[c(grep(paste("\\b",i,"\\b",sep=""),pleuralCancer$chromosome_name)),]))
+  assign(zsex[i],arrange(((get(zsex[i]))),start_position))
+  assign(zsex[i],(get(zsex[i])[c("gene_name","Gain","Loss","start_position")]))
+}
+pleuralCancerSexPlots<-c("pleuralCancerPlotX","pleuralCancerPlotY")
+
+
+for (i in LETTERS[24:25]){
+  assign(paste0("pleuralCancerPlot",i),
+         (ggplot(get(zsex[i]),aes(start_position,Gain),size=.5)+
+            geom_point()+
+            geom_point(aes(y=-Loss))+
+            xlab("Gene Start Position")+
+            ylab("Copy Number Variable")+ggtitle(paste0("chromosome",i))+
+            theme(plot.title = element_text(hjust = .5 ,size=7.5,face="bold"))+
+            theme(axis.text=element_text(size=5),
+                  axis.title=element_text(size=5,face="bold"))))
+}
+
+pleuralCancerChromosomesPlot<-grid.arrange(pleuralCancerPlot1,pleuralCancerPlot2,pleuralCancerPlot3,pleuralCancerPlot4,pleuralCancerPlot5,pleuralCancerPlot6,pleuralCancerPlot7,pleuralCancerPlot8,pleuralCancerPlot9,pleuralCancerPlot10,pleuralCancerPlot11,pleuralCancerPlot12,pleuralCancerPlot13,pleuralCancerPlot14,pleuralCancerPlot15,pleuralCancerPlot16,pleuralCancerPlot17,pleuralCancerPlot18,pleuralCancerPlot19,pleuralCancerPlot20,pleuralCancerPlot21,pleuralCancerPlot22,pleuralCancerPlotX,pleuralCancerPlotY,nrow=6,ncol=4)
+
+#########################################################################################################
+
+autonomicGangliaCancer<-(left_join(autonomicGangliaCancer,chromosomes,by=c(gene_name="hgnc_symbol")))
+
+a1<-c("autonomicGangliaCancer1","autonomicGangliaCancer2","autonomicGangliaCancer3","autonomicGangliaCancer4","autonomicGangliaCancer5","autonomicGangliaCancer6","autonomicGangliaCancer7","autonomicGangliaCancer8","autonomicGangliaCancer9","autonomicGangliaCancer10","autonomicGangliaCancer11","autonomicGangliaCancer12","autonomicGangliaCancer13","autonomicGangliaCancer14","autonomicGangliaCancer15","autonomicGangliaCancer16","autonomicGangliaCancer17","autonomicGangliaCancer18","autonomicGangliaCancer19","autonomicGangliaCancer20", "autonomicGangliaCancer21","autonomicGangliaCancer22")
+for (i in 1:22){
+  assign(a1[i],data.frame(autonomicGangliaCancer[c(grep(paste("\\b",i,"\\b",sep=""),autonomicGangliaCancer$chromosome_name)),]))
+  assign(a1[i],arrange(((get(a1[i]))),start_position))
+  assign(a1[i],(get(a1[i])[c("gene_name","Gain","Loss","start_position")]))
+}
+
+
+autonomicGangliaCancerPlots<-c("autonomicGangliaCancerPlot1","autonomicGangliaCancerPlot2","autonomicGangliaCancerPlot3","autonomicGangliaCancerPlot4","autonomicGangliaCancerPlot5","autonomicGangliaCancerPlot6","autonomicGangliaCancerPlot7","autonomicGangliaCancerPlot8","autonomicGangliaCancerPlot9","autonomicGangliaCancerPlot10","autonomicGangliaCancerPlot11","autonomicGangliaCancerPlot12","autonomicGangliaCancerPlot13","autonomicGangliaCancerPlot14","autonomicGangliaCancerPlot15","autonomicGangliaCancerPlot16","autonomicGangliaCancerPlot17","autonomicGangliaCancerPlot18","autonomicGangliaCancerPlot19","autonomicGangliaCancerPlot20","autonomicGangliaCancerPlot21","autonomicGangliaCancerPlot22")
+for (i in 1:22){
+  
+  assign(autonomicGangliaCancerPlots[i],
+         (ggplot(get(a1[i]),aes(start_position,Gain),size=.5)+
+            geom_point()+
+            geom_point(aes(y=-Loss))+
+            xlab("Gene Start Position")+
+            ylab("Copy Number Variable")+ggtitle(paste0("chromosome",i))+
+            theme(plot.title = element_text(hjust = .5 ,size=7.5,face="bold"))+
+            theme(axis.text=element_text(size=5),
+                  axis.title=element_text(size=5,face="bold")))
+  )}
+
+##############################################
+a1sex<-c("autonomicGangliaCancerX","autonomicGangliaCancerY")
+
+for (i in LETTERS[24:25]){
+  assign(a1sex[i],data.frame(autonomicGangliaCancer[c(grep(paste("\\b",i,"\\b",sep=""),autonomicGangliaCancer$chromosome_name)),]))
+  assign(a1sex[i],arrange(((get(a1sex[i]))),start_position))
+  assign(a1sex[i],(get(a1sex[i])[c("gene_name","Gain","Loss","start_position")]))
+}
+autonomicGangliaCancerSexPlots<-c("autonomicGangliaCancerPlotX","autonomicGangliaCancerPlotY")
+
+
+for (i in LETTERS[24:25]){
+  assign(paste0("autonomicGangliaCancerPlot",i),
+         (ggplot(get(a1sex[i]),aes(start_position,Gain),size=.5)+
+            geom_point()+
+            geom_point(aes(y=-Loss))+
+            xlab("Gene Start Position")+
+            ylab("Copy Number Variable")+ggtitle(paste0("chromosome",i))+
+            theme(plot.title = element_text(hjust = .5 ,size=7.5,face="bold"))+
+            theme(axis.text=element_text(size=5),
+                  axis.title=element_text(size=5,face="bold"))))
+}
+
+autonomicGangliaCancerChromosomesPlot<-grid.arrange(autonomicGangliaCancerPlot1,autonomicGangliaCancerPlot2,autonomicGangliaCancerPlot3,autonomicGangliaCancerPlot4,autonomicGangliaCancerPlot5,autonomicGangliaCancerPlot6,autonomicGangliaCancerPlot7,autonomicGangliaCancerPlot8,autonomicGangliaCancerPlot9,autonomicGangliaCancerPlot10,autonomicGangliaCancerPlot11,autonomicGangliaCancerPlot12,autonomicGangliaCancerPlot13,autonomicGangliaCancerPlot14,autonomicGangliaCancerPlot15,autonomicGangliaCancerPlot16,autonomicGangliaCancerPlot17,autonomicGangliaCancerPlot18,autonomicGangliaCancerPlot19,autonomicGangliaCancerPlot20,autonomicGangliaCancerPlot21,autonomicGangliaCancerPlot22,autonomicGangliaCancerPlotX,autonomicGangliaCancerPlotY,nrow=6,ncol=4)
+
+#########################################################################################################
+
+thymusCancer<-(left_join(thymusCancer,chromosomes,by=c(gene_name="hgnc_symbol")))
+
+b1<-c("thymusCancer1","thymusCancer2","thymusCancer3","thymusCancer4","thymusCancer5","thymusCancer6","thymusCancer7","thymusCancer8","thymusCancer9","thymusCancer10","thymusCancer11","thymusCancer12","thymusCancer13","thymusCancer14","thymusCancer15","thymusCancer16","thymusCancer17","thymusCancer18","thymusCancer19","thymusCancer20", "thymusCancer21","thymusCancer22")
+for (i in 1:22){
+  assign(b1[i],data.frame(thymusCancer[c(grep(paste("\\b",i,"\\b",sep=""),thymusCancer$chromosome_name)),]))
+  assign(b1[i],arrange(((get(b1[i]))),start_position))
+  assign(b1[i],(get(b1[i])[c("gene_name","Gain","Loss","start_position")]))
+}
+
+
+thymusCancerPlots<-c("thymusCancerPlot1","thymusCancerPlot2","thymusCancerPlot3","thymusCancerPlot4","thymusCancerPlot5","thymusCancerPlot6","thymusCancerPlot7","thymusCancerPlot8","thymusCancerPlot9","thymusCancerPlot10","thymusCancerPlot11","thymusCancerPlot12","thymusCancerPlot13","thymusCancerPlot14","thymusCancerPlot15","thymusCancerPlot16","thymusCancerPlot17","thymusCancerPlot18","thymusCancerPlot19","thymusCancerPlot20","thymusCancerPlot21","thymusCancerPlot22")
+for (i in 1:22){
+  
+  assign(thymusCancerPlots[i],
+         (ggplot(get(b1[i]),aes(start_position,Gain),size=.5)+
+            geom_point()+
+            geom_point(aes(y=-Loss))+
+            xlab("Gene Start Position")+
+            ylab("Copy Number Variable")+ggtitle(paste0("chromosome",i))+
+            theme(plot.title = element_text(hjust = .5 ,size=7.5,face="bold"))+
+            theme(axis.text=element_text(size=5),
+                  axis.title=element_text(size=5,face="bold")))
+  )}
+
+##############################################
+b1sex<-c("thymusCancerX","thymusCancerY")
+
+for (i in LETTERS[24:25]){
+  assign(b1sex[i],data.frame(thymusCancer[c(grep(paste("\\b",i,"\\b",sep=""),thymusCancer$chromosome_name)),]))
+  assign(b1sex[i],arrange(((get(b1sex[i]))),start_position))
+  assign(b1sex[i],(get(b1sex[i])[c("gene_name","Gain","Loss","start_position")]))
+}
+thymusCancerSexPlots<-c("thymusCancerPlotX","thymusCancerPlotY")
+
+
+for (i in LETTERS[24:25]){
+  assign(paste0("thymusCancerPlot",i),
+         (ggplot(get(b1sex[i]),aes(start_position,Gain),size=.5)+
+            geom_point()+
+            geom_point(aes(y=-Loss))+
+            xlab("Gene Start Position")+
+            ylab("Copy Number Variable")+ggtitle(paste0("chromosome",i))+
+            theme(plot.title = element_text(hjust = .5 ,size=7.5,face="bold"))+
+            theme(axis.text=element_text(size=5),
+                  axis.title=element_text(size=5,face="bold"))))
+}
+
+thymusCancerChromosomesPlot<-grid.arrange(thymusCancerPlot1,thymusCancerPlot2,thymusCancerPlot3,thymusCancerPlot4,thymusCancerPlot5,thymusCancerPlot6,thymusCancerPlot7,thymusCancerPlot8,thymusCancerPlot9,thymusCancerPlot10,thymusCancerPlot11,thymusCancerPlot12,thymusCancerPlot13,thymusCancerPlot14,thymusCancerPlot15,thymusCancerPlot16,thymusCancerPlot17,thymusCancerPlot18,thymusCancerPlot19,thymusCancerPlot20,thymusCancerPlot21,thymusCancerPlot22,thymusCancerPlotX,thymusCancerPlotY,nrow=6,ncol=4)
+
+#########################################################################################################
+
+eyeCancer<-(left_join(eyeCancer,chromosomes,by=c(gene_name="hgnc_symbol")))
+
+c1<-c("eyeCancer1","eyeCancer2","eyeCancer3","eyeCancer4","eyeCancer5","eyeCancer6","eyeCancer7","eyeCancer8","eyeCancer9","eyeCancer10","eyeCancer11","eyeCancer12","eyeCancer13","eyeCancer14","eyeCancer15","eyeCancer16","eyeCancer17","eyeCancer18","eyeCancer19","eyeCancer20", "eyeCancer21","eyeCancer22")
+for (i in 1:22){
+  assign(c1[i],data.frame(eyeCancer[c(grep(paste("\\b",i,"\\b",sep=""),eyeCancer$chromosome_name)),]))
+  assign(c1[i],arrange(((get(c1[i]))),start_position))
+  assign(c1[i],(get(c1[i])[c("gene_name","Gain","Loss","start_position")]))
+}
+
+
+eyeCancerPlots<-c("eyeCancerPlot1","eyeCancerPlot2","eyeCancerPlot3","eyeCancerPlot4","eyeCancerPlot5","eyeCancerPlot6","eyeCancerPlot7","eyeCancerPlot8","eyeCancerPlot9","eyeCancerPlot10","eyeCancerPlot11","eyeCancerPlot12","eyeCancerPlot13","eyeCancerPlot14","eyeCancerPlot15","eyeCancerPlot16","eyeCancerPlot17","eyeCancerPlot18","eyeCancerPlot19","eyeCancerPlot20","eyeCancerPlot21","eyeCancerPlot22")
+for (i in 1:22){
+  
+  assign(eyeCancerPlots[i],
+         (ggplot(get(c1[i]),aes(start_position,Gain),size=.5)+
+            geom_point()+
+            geom_point(aes(y=-Loss))+
+            xlab("Gene Start Position")+
+            ylab("Copy Number Variable")+ggtitle(paste0("chromosome",i))+
+            theme(plot.title = element_text(hjust = .5 ,size=7.5,face="bold"))+
+            theme(axis.text=element_text(size=5),
+                  axis.title=element_text(size=5,face="bold")))
+  )}
+
+##############################################
+c1sex<-c("eyeCancerX","eyeCancerY")
+
+for (i in LETTERS[24:25]){
+  assign(c1sex[i],data.frame(eyeCancer[c(grep(paste("\\b",i,"\\b",sep=""),eyeCancer$chromosome_name)),]))
+  assign(c1sex[i],arrange(((get(c1sex[i]))),start_position))
+  assign(c1sex[i],(get(c1sex[i])[c("gene_name","Gain","Loss","start_position")]))
+}
+eyeCancerSexPlots<-c("eyeCancerPlotX","eyeCancerPlotY")
+
+
+for (i in LETTERS[24:25]){
+  assign(paste0("eyeCancerPlot",i),
+         (ggplot(get(c1sex[i]),aes(start_position,Gain),size=.5)+
+            geom_point()+
+            geom_point(aes(y=-Loss))+
+            xlab("Gene Start Position")+
+            ylab("Copy Number Variable")+ggtitle(paste0("chromosome",i))+
+            theme(plot.title = element_text(hjust = .5 ,size=7.5,face="bold"))+
+            theme(axis.text=element_text(size=5),
+                  axis.title=element_text(size=5,face="bold"))))
+}
+
+eyeCancerChromosomesPlot<-grid.arrange(eyeCancerPlot1,eyeCancerPlot2,eyeCancerPlot3,eyeCancerPlot4,eyeCancerPlot5,eyeCancerPlot6,eyeCancerPlot7,eyeCancerPlot8,eyeCancerPlot9,eyeCancerPlot10,eyeCancerPlot11,eyeCancerPlot12,eyeCancerPlot13,eyeCancerPlot14,eyeCancerPlot15,eyeCancerPlot16,eyeCancerPlot17,eyeCancerPlot18,eyeCancerPlot19,eyeCancerPlot20,eyeCancerPlot21,eyeCancerPlot22,eyeCancerPlotX,eyeCancerPlotY,nrow=6,col=4)
+
+#########################################################################################################
+
+NSCancer<-(left_join(NSCancer,chromosomes,by=c(gene_name="hgnc_symbol")))
+
+d1<-c("NSCancer1","NSCancer2","NSCancer3","NSCancer4","NSCancer5","NSCancer6","NSCancer7","NSCancer8","NSCancer9","NSCancer10","NSCancer11","NSCancer12","NSCancer13","NSCancer14","NSCancer15","NSCancer16","NSCancer17","NSCancer18","NSCancer19","NSCancer20", "NSCancer21","NSCancer22")
+for (i in 1:22){
+  assign(d1[i],data.frame(NSCancer[c(grep(paste("\\b",i,"\\b",sep=""),NSCancer$chromosome_name)),]))
+  assign(d1[i],arrange(((get(d1[i]))),start_position))
+  assign(d1[i],(get(d1[i])[c("gene_name","Gain","Loss","start_position")]))
+}
+
+
+NSCancerPlots<-c("NSCancerPlot1","NSCancerPlot2","NSCancerPlot3","NSCancerPlot4","NSCancerPlot5","NSCancerPlot6","NSCancerPlot7","NSCancerPlot8","NSCancerPlot9","NSCancerPlot10","NSCancerPlot11","NSCancerPlot12","NSCancerPlot13","NSCancerPlot14","NSCancerPlot15","NSCancerPlot16","NSCancerPlot17","NSCancerPlot18","NSCancerPlot19","NSCancerPlot20","NSCancerPlot21","NSCancerPlot22")
+for (i in 1:22){
+  
+  assign(NSCancerPlots[i],
+         (ggplot(get(d1[i]),aes(start_position,Gain),size=.5)+
+            geom_point()+
+            geom_point(aes(y=-Loss))+
+            xlab("Gene Start Position")+
+            ylab("Copy Number Variable")+ggtitle(paste0("chromosome",i))+
+            theme(plot.title = element_text(hjust = .5 ,size=7.5,face="bold"))+
+            theme(axis.text=element_text(size=5),
+                  axis.title=element_text(size=5,face="bold")))
+  )}
+
+##############################################
+d1sex<-c("NSCancerX","NSCancerY")
+
+for (i in LETTERS[24:25]){
+  assign(d1sex[i],data.frame(NSCancer[c(grep(paste("\\b",i,"\\b",sep=""),NSCancer$chromosome_name)),]))
+  assign(d1sex[i],arrange(((get(d1sex[i]))),start_position))
+  assign(d1sex[i],(get(d1sex[i])[c("gene_name","Gain","Loss","start_position")]))
+}
+NSCancerSexPlots<-c("NSCancerPlotX","NSCancerPlotY")
+
+
+for (i in LETTERS[24:25]){
+  assign(paste0("NSCancerPlot",i),
+         (ggplot(get(d1sex[i]),aes(start_position,Gain),size=.5)+
+            geom_point()+
+            geom_point(aes(y=-Loss))+
+            xlab("Gene Start Position")+
+            ylab("Copy Number Variable")+ggtitle(paste0("chromosome",i))+
+            theme(plot.title = element_text(hjust = .5 ,size=7.5,face="bold"))+
+            theme(axis.text=element_text(size=5),
+                  axis.title=element_text(size=5,face="bold"))))
+}
+
+NSCancerChromosomesPlot<-grid.arrange(NSCancerPlot1,NSCancerPlot2,NSCancerPlot3,NSCancerPlot4,NSCancerPlot5,NSCancerPlot6,NSCancerPlot7,NSCancerPlot8,NSCancerPlot9,NSCancerPlot10,NSCancerPlot11,NSCancerPlot12,NSCancerPlot13,NSCancerPlot14,NSCancerPlot15,NSCancerPlot16,NSCancerPlot17,NSCancerPlot18,NSCancerPlot19,NSCancerPlot20,NSCancerPlot21,NSCancerPlot22,NSCancerPlotX,NSCancerPlotY,nrow=6,ncol=4)
+
+#########################################################################################################
+
+biliaryTractCancer<-(left_join(biliary_Tract_Cancer,chromosomes,by=c(gene_name="hgnc_symbol")))
+
+e1<-c("biliaryTractCancer1","biliaryTractCancer2","biliaryTractCancer3","biliaryTractCancer4","biliaryTractCancer5","biliaryTractCancer6","biliaryTractCancer7","biliaryTractCancer8","biliaryTractCancer9","biliaryTractCancer10","biliaryTractCancer11","biliaryTractCancer12","biliaryTractCancer13","biliaryTractCancer14","biliaryTractCancer15","biliaryTractCancer16","biliaryTractCancer17","biliaryTractCancer18","biliaryTractCancer19","biliaryTractCancer20", "biliaryTractCancer21","biliaryTractCancer22")
+for (i in 1:22){
+  assign(e1[i],data.frame(biliaryTractCancer[c(grep(paste("\\b",i,"\\b",sep=""),biliaryTractCancer$chromosome_name)),]))
+  assign(e1[i],arrange(((get(e1[i]))),start_position))
+  assign(e1[i],(get(e1[i])[c("gene_name","Gain","Loss","start_position")]))
+}
+
+
+biliaryTractCancerPlots<-c("biliaryTractCancerPlot1","biliaryTractCancerPlot2","biliaryTractCancerPlot3","biliaryTractCancerPlot4","biliaryTractCancerPlot5","biliaryTractCancerPlot6","biliaryTractCancerPlot7","biliaryTractCancerPlot8","biliaryTractCancerPlot9","biliaryTractCancerPlot10","biliaryTractCancerPlot11","biliaryTractCancerPlot12","biliaryTractCancerPlot13","biliaryTractCancerPlot14","biliaryTractCancerPlot15","biliaryTractCancerPlot16","biliaryTractCancerPlot17","biliaryTractCancerPlot18","biliaryTractCancerPlot19","biliaryTractCancerPlot20","biliaryTractCancerPlot21","biliaryTractCancerPlot22")
+for (i in 1:22){
+  
+  assign(biliaryTractCancerPlots[i],
+         (ggplot(get(e1[i]),aes(start_position,Gain),size=.5)+
+            geom_point()+
+            geom_point(aes(y=-Loss))+
+            xlab("Gene Start Position")+
+            ylab("Copy Number Variable")+ggtitle(paste0("chromosome",i))+
+            theme(plot.title = element_text(hjust = .5 ,size=7.5,face="bold"))+
+            theme(axis.text=element_text(size=5),
+                  axis.title=element_text(size=5,face="bold")))
+  )}
+
+##############################################
+e1sex<-c("biliaryTractCancerX","biliaryTractCancerY")
+
+for (i in LETTERS[24:25]){
+  assign(e1sex[i],data.frame(biliaryTractCancer[c(grep(paste("\\b",i,"\\b",sep=""),biliaryTractCancer$chromosome_name)),]))
+  assign(e1sex[i],arrange(((get(e1sex[i]))),start_position))
+  assign(e1sex[i],(get(e1sex[i])[c("gene_name","Gain","Loss","start_position")]))
+}
+biliaryTractCancerSexPlots<-c("biliaryTractCancerPlotX","biliaryTractCancerPlotY")
+
+
+for (i in LETTERS[24:25]){
+  assign(paste0("biliaryTractCancerPlot",i),
+         (ggplot(get(e1sex[i]),aes(start_position,Gain),size=.5)+
+            geom_point()+
+            geom_point(aes(y=-Loss))+
+            xlab("Gene Start Position")+
+            ylab("Copy Number Variable")+ggtitle(paste0("chromosome",i))+
+            theme(plot.title = element_text(hjust = .5 ,size=7.5,face="bold"))+
+            theme(axis.text=element_text(size=5),
+                  axis.title=element_text(size=5,face="bold"))))
+}
+
+biliaryTractCancerChromosomesPlot<-grid.arrange(biliaryTractCancerPlot1,biliaryTractCancerPlot2,biliaryTractCancerPlot3,biliaryTractCancerPlot4,biliaryTractCancerPlot5,biliaryTractCancerPlot6,biliaryTractCancerPlot7,biliaryTractCancerPlot8,biliaryTractCancerPlot9,biliaryTractCancerPlot10,biliaryTractCancerPlot11,biliaryTractCancerPlot12,biliaryTractCancerPlot13,biliaryTractCancerPlot14,biliaryTractCancerPlot15,biliaryTractCancerPlot16,biliaryTractCancerPlot17,biliaryTractCancerPlot18,biliaryTractCancerPlot19,biliaryTractCancerPlot20,biliaryTractCancerPlot21,biliaryTractCancerPlot22,biliaryTractCancerPlotX,biliaryTractCancerPlotY,nrow=6,ncol=4)
+
+#########################################################################################################
+
+vulvaCancer<-(left_join(vulvaCancer,chromosomes,by=c(gene_name="hgnc_symbol")))
+
+f1<-c("vulvaCancer1","vulvaCancer2","vulvaCancer3","vulvaCancer4","vulvaCancer5","vulvaCancer6","vulvaCancer7","vulvaCancer8","vulvaCancer9","vulvaCancer10","vulvaCancer11","vulvaCancer12","vulvaCancer13","vulvaCancer14","vulvaCancer15","vulvaCancer16","vulvaCancer17","vulvaCancer18","vulvaCancer19","vulvaCancer20", "vulvaCancer21","vulvaCancer22")
+for (i in 1:22){
+  assign(f1[i],data.frame(vulvaCancer[c(grep(paste("\\b",i,"\\b",sep=""),vulvaCancer$chromosome_name)),]))
+  assign(f1[i],arrange(((get(f1[i]))),start_position))
+  assign(f1[i],(get(f1[i])[c("gene_name","Gain","Loss","start_position")]))
+}
+
+
+vulvaCancerPlots<-c("vulvaCancerPlot1","vulvaCancerPlot2","vulvaCancerPlot3","vulvaCancerPlot4","vulvaCancerPlot5","vulvaCancerPlot6","vulvaCancerPlot7","vulvaCancerPlot8","vulvaCancerPlot9","vulvaCancerPlot10","vulvaCancerPlot11","vulvaCancerPlot12","vulvaCancerPlot13","vulvaCancerPlot14","vulvaCancerPlot15","vulvaCancerPlot16","vulvaCancerPlot17","vulvaCancerPlot18","vulvaCancerPlot19","vulvaCancerPlot20","vulvaCancerPlot21","vulvaCancerPlot22")
+for (i in 1:22){
+  
+  assign(vulvaCancerPlots[i],
+         (ggplot(get(f1[i]),aes(start_position,Gain),size=.5)+
+            geom_point()+
+            geom_point(aes(y=-Loss))+
+            xlab("Gene Start Position")+
+            ylab("Copy Number Variable")+ggtitle(paste0("chromosome",i))+
+            theme(plot.title = element_text(hjust = .5 ,size=7.5,face="bold"))+
+            theme(axis.text=element_text(size=5),
+                  axis.title=element_text(size=5,face="bold")))
+  )}
+
+##############################################
+f1sex<-c("vulvaCancerX","vulvaCancerY")
+
+for (i in LETTERS[24:25]){
+  assign(f1sex[i],data.frame(vulvaCancer[c(grep(paste("\\b",i,"\\b",sep=""),vulvaCancer$chromosome_name)),]))
+  assign(f1sex[i],arrange(((get(f1sex[i]))),start_position))
+  assign(f1sex[i],(get(f1sex[i])[c("gene_name","Gain","Loss","start_position")]))
+}
+vulvaCancerSexPlots<-c("vulvaCancerPlotX","vulvaCancerPlotY")
+
+
+for (i in LETTERS[24:25]){
+  assign(paste0("vulvaCancerPlot",i),
+         (ggplot(get(f1sex[i]),aes(start_position,Gain),size=.5)+
+            geom_point()+
+            geom_point(aes(y=-Loss))+
+            xlab("Gene Start Position")+
+            ylab("Copy Number Variable")+ggtitle(paste0("chromosome",i))+
+            theme(plot.title = element_text(hjust = .5 ,size=7.5,face="bold"))+
+            theme(axis.text=element_text(size=5),
+                  axis.title=element_text(size=5,face="bold"))))
+}
+
+vulvaCancerChromosomesPlot<-grid.arrange(vulvaCancerPlot1,vulvaCancerPlot2,vulvaCancerPlot3,vulvaCancerPlot4,vulvaCancerPlot5,vulvaCancerPlot6,vulvaCancerPlot7,vulvaCancerPlot8,vulvaCancerPlot9,vulvaCancerPlot10,vulvaCancerPlot11,vulvaCancerPlot12,vulvaCancerPlot13,vulvaCancerPlot14,vulvaCancerPlot15,vulvaCancerPlot16,vulvaCancerPlot17,vulvaCancerPlot18,vulvaCancerPlot19,vulvaCancerPlot20,vulvaCancerPlot21,vulvaCancerPlot22,vulvaCancerPlotX,vulvaCancerPlotY,nrow=6,ncol=4)
+
+#########################################################################################################
+
+salivaryGlandCancer<-(left_join(salivaryGlandCancer,chromosomes,by=c(gene_name="hgnc_symbol")))
+
+g1<-c("salivaryGlandCancer1","salivaryGlandCancer2","salivaryGlandCancer3","salivaryGlandCancer4","salivaryGlandCancer5","salivaryGlandCancer6","salivaryGlandCancer7","salivaryGlandCancer8","salivaryGlandCancer9","salivaryGlandCancer10","salivaryGlandCancer11","salivaryGlandCancer12","salivaryGlandCancer13","salivaryGlandCancer14","salivaryGlandCancer15","salivaryGlandCancer16","salivaryGlandCancer17","salivaryGlandCancer18","salivaryGlandCancer19","salivaryGlandCancer20", "salivaryGlandCancer21","salivaryGlandCancer22")
+for (i in 1:22){
+  assign(g1[i],data.frame(salivaryGlandCancer[c(grep(paste("\\b",i,"\\b",sep=""),salivaryGlandCancer$chromosome_name)),]))
+  assign(g1[i],arrange(((get(g1[i]))),start_position))
+  assign(g1[i],(get(g1[i])[c("gene_name","Gain","Loss","start_position")]))
+}
+
+
+salivaryGlandCancerPlots<-c("salivaryGlandCancerPlot1","salivaryGlandCancerPlot2","salivaryGlandCancerPlot3","salivaryGlandCancerPlot4","salivaryGlandCancerPlot5","salivaryGlandCancerPlot6","salivaryGlandCancerPlot7","salivaryGlandCancerPlot8","salivaryGlandCancerPlot9","salivaryGlandCancerPlot10","salivaryGlandCancerPlot11","salivaryGlandCancerPlot12","salivaryGlandCancerPlot13","salivaryGlandCancerPlot14","salivaryGlandCancerPlot15","salivaryGlandCancerPlot16","salivaryGlandCancerPlot17","salivaryGlandCancerPlot18","salivaryGlandCancerPlot19","salivaryGlandCancerPlot20","salivaryGlandCancerPlot21","salivaryGlandCancerPlot22")
+for (i in 1:22){
+  
+  assign(salivaryGlandCancerPlots[i],
+         (ggplot(get(g1[i]),aes(start_position,Gain),size=.5)+
+            geom_point()+
+            geom_point(aes(y=-Loss))+
+            xlab("Gene Start Position")+
+            ylab("Copy Number Variable")+ggtitle(paste0("chromosome",i))+
+            theme(plot.title = element_text(hjust = .5 ,size=7.5,face="bold"))+
+            theme(axis.text=element_text(size=5),
+                  axis.title=element_text(size=5,face="bold")))
+  )}
+
+##############################################
+##############################################
+gsex<-c("salivaryGlandCancerX","salivaryGlandCancerY")
+
+for (i in LETTERS[24:25]){
+  assign(gsex[i],data.frame(salivaryGlandCancer[c(grep(paste("\\b",i,"\\b",sep=""),salivaryGlandCancer$chromosome_name)),]))
+  assign(gsex[i],arrange(((get(gsex[i]))),start_position))
+  assign(gsex[i],(get(gsex[i])[c("gene_name","Gain","Loss","start_position")]))
+}
+salivaryGlandCancerSexPlots<-c("salivaryGlandCancerPlotX","salivaryGlandCancerPlotY")
+
+
+for (i in LETTERS[24:25]){
+  assign(paste0("salivaryGlandCancerPlot",i),
+         (ggplot(get(gsex[i]),aes(start_position,Gain),size=.5)+
+            geom_point()+
+            geom_point(aes(y=-Loss))+
+            xlab("Gene Start Position")+
+            ylab("Copy Number Variable")+ggtitle(paste0("chromosome",i))+
+            theme(plot.title = element_text(hjust = .5 ,size=7.5,face="bold"))+
+            theme(axis.text=element_text(size=5),
+                  axis.title=element_text(size=5,face="bold"))))
+}
+salivaryGlandCancerChromosomesPlot<-grid.arrange(salivaryGlandCancerPlot1,salivaryGlandCancerPlot2,salivaryGlandCancerPlot3,salivaryGlandCancerPlot4,salivaryGlandCancerPlot5,salivaryGlandCancerPlot6,salivaryGlandCancerPlot7,salivaryGlandCancerPlot8,salivaryGlandCancerPlot9,salivaryGlandCancerPlot10,salivaryGlandCancerPlot11,salivaryGlandCancerPlot12,salivaryGlandCancerPlot13,salivaryGlandCancerPlot14,salivaryGlandCancerPlot15,salivaryGlandCancerPlot16,salivaryGlandCancerPlot17,salivaryGlandCancerPlot18,salivaryGlandCancerPlot19,salivaryGlandCancerPlot20,salivaryGlandCancerPlot21,salivaryGlandCancerPlot22,salivaryGlandCancerPlotX,salivaryGlandCancerPlotY,nrow=6,ncol=4)
+
+#########################################################################################################
+
+placentalCancer<-(left_join(placentalCancer,chromosomes,by=c(gene_name="hgnc_symbol")))
+
+h1<-c("placentalCancer1","placentalCancer2","placentalCancer3","placentalCancer4","placentalCancer5","placentalCancer6","placentalCancer7","placentalCancer8","placentalCancer9","placentalCancer10","placentalCancer11","placentalCancer12","placentalCancer13","placentalCancer14","placentalCancer15","placentalCancer16","placentalCancer17","placentalCancer18","placentalCancer19","placentalCancer20", "placentalCancer21","placentalCancer22")
+for (i in 1:22){
+  assign(h1[i],data.frame(placentalCancer[c(grep(paste("\\b",i,"\\b",sep=""),placentalCancer$chromosome_name)),]))
+  assign(h1[i],arrange(((get(h1[i]))),start_position))
+  assign(h1[i],(get(h1[i])[c("gene_name","Gain","Loss","start_position")]))
+}
+
+
+placentalCancerPlots<-c("placentalCancerPlot1","placentalCancerPlot2","placentalCancerPlot3","placentalCancerPlot4","placentalCancerPlot5","placentalCancerPlot6","placentalCancerPlot7","placentalCancerPlot8","placentalCancerPlot9","placentalCancerPlot10","placentalCancerPlot11","placentalCancerPlot12","placentalCancerPlot13","placentalCancerPlot14","placentalCancerPlot15","placentalCancerPlot16","placentalCancerPlot17","placentalCancerPlot18","placentalCancerPlot19","placentalCancerPlot20","placentalCancerPlot21","placentalCancerPlot22")
+for (i in 1:22){
+  
+  assign(placentalCancerPlots[i],
+         (ggplot(get(h1[i]),aes(start_position,Gain),size=.5)+
+            geom_point()+
+            geom_point(aes(y=-Loss))+
+            xlab("Gene Start Position")+
+            ylab("Copy Number Variable")+ggtitle(paste0("chromosome",i))+
+            theme(plot.title = element_text(hjust = .5 ,size=7.5,face="bold"))+
+            theme(axis.text=element_text(size=5),
+                  axis.title=element_text(size=5,face="bold")))
+  )}
+
+##############################################
+hsex<-c("placentalCancerX","placentalCancerY")
+
+for (i in LETTERS[24:25]){
+  assign(hsex[i],data.frame(placentalCancer[c(grep(paste("\\b",i,"\\b",sep=""),placentalCancer$chromosome_name)),]))
+  assign(hsex[i],arrange(((get(hsex[i]))),start_position))
+  assign(hsex[i],(get(hsex[i])[c("gene_name","Gain","Loss","start_position")]))
+}
+placentalCancerSexPlots<-c("placentalCancerPlotX","placentalCancerPlotY")
+
+
+for (i in LETTERS[24:25]){
+  assign(paste0("placentalCancerPlot",i),
+         (ggplot(get(hsex[i]),aes(start_position,Gain),size=.5)+
+            geom_point()+
+            geom_point(aes(y=-Loss))+
+            xlab("Gene Start Position")+
+            ylab("Copy Number Variable")+ggtitle(paste0("chromosome",i))+
+            theme(plot.title = element_text(hjust = .5 ,size=7.5,face="bold"))+
+            theme(axis.text=element_text(size=5),
+                  axis.title=element_text(size=5,face="bold"))))
+}
+
+placentalCancerChromosomesPlot<-grid.arrange(placentalCancerPlot1,placentalCancerPlot2,placentalCancerPlot3,placentalCancerPlot4,placentalCancerPlot5,placentalCancerPlot6,placentalCancerPlot7,placentalCancerPlot8,placentalCancerPlot9,placentalCancerPlot10,placentalCancerPlot11,placentalCancerPlot12,placentalCancerPlot13,placentalCancerPlot14,placentalCancerPlot15,placentalCancerPlot16,placentalCancerPlot17,placentalCancerPlot18,placentalCancerPlot19,placentalCancerPlot20,placentalCancerPlot21,placentalCancerPlot22,placentalCancerPlotX,placentalCancerPlotY,nrow=6,ncol=4)
+
+#########################################################################################################
+
+smallIntestineCancer<-(left_join(smallIntestineCancer,chromosomes,by=c(gene_name="hgnc_symbol")))
+
+i1<-c("smallIntestineCancer1","smallIntestineCancer2","smallIntestineCancer3","smallIntestineCancer4","smallIntestineCancer5","smallIntestineCancer6","smallIntestineCancer7","smallIntestineCancer8","smallIntestineCancer9","smallIntestineCancer10","smallIntestineCancer11","smallIntestineCancer12","smallIntestineCancer13","smallIntestineCancer14","smallIntestineCancer15","smallIntestineCancer16","smallIntestineCancer17","smallIntestineCancer18","smallIntestineCancer19","smallIntestineCancer20", "smallIntestineCancer21","smallIntestineCancer22")
+for (i in 1:22){
+  assign(i1[i],data.frame(smallIntestineCancer[c(grep(paste("\\b",i,"\\b",sep=""),smallIntestineCancer$chromosome_name)),]))
+  assign(i1[i],arrange(((get(i1[i]))),start_position))
+  assign(i1[i],(get(i1[i])[c("gene_name","Gain","Loss","start_position")]))
+}
+
+
+smallIntestineCancerPlots<-c("smallIntestineCancerPlot1","smallIntestineCancerPlot2","smallIntestineCancerPlot3","smallIntestineCancerPlot4","smallIntestineCancerPlot5","smallIntestineCancerPlot6","smallIntestineCancerPlot7","smallIntestineCancerPlot8","smallIntestineCancerPlot9","smallIntestineCancerPlot10","smallIntestineCancerPlot11","smallIntestineCancerPlot12","smallIntestineCancerPlot13","smallIntestineCancerPlot14","smallIntestineCancerPlot15","smallIntestineCancerPlot16","smallIntestineCancerPlot17","smallIntestineCancerPlot18","smallIntestineCancerPlot19","smallIntestineCancerPlot20","smallIntestineCancerPlot21","smallIntestineCancerPlot22")
+for (i in 1:22){
+  
+  assign(smallIntestineCancerPlots[i],
+         (ggplot(get(i1[i]),aes(start_position,Gain),size=.5)+
+            geom_point()+
+            geom_point(aes(y=-Loss))+
+            xlab("Gene Start Position")+
+            ylab("Copy Number Variable")+ggtitle(paste0("chromosome",i))+
+            theme(plot.title = element_text(hjust = .5 ,size=7.5,face="bold"))+
+            theme(axis.text=element_text(size=5),
+                  axis.title=element_text(size=5,face="bold")))
+  )}
+
+##############################################
+i1sex<-c("smallIntestineCancerX","smallIntestineCancerY")
+
+for (i in LETTERS[24:25]){
+  assign(i1sex[i],data.frame(smallIntestineCancer[c(grep(paste("\\b",i,"\\b",sep=""),smallIntestineCancer$chromosome_name)),]))
+  assign(i1sex[i],arrange(((get(i1sex[i]))),start_position))
+  assign(i1sex[i],(get(i1sex[i])[c("gene_name","Gain","Loss","start_position")]))
+}
+smallIntestineCancerSexPlots<-c("smallIntestineCancerPlotX","smallIntestineCancerPlotY")
+
+
+for (i in LETTERS[24:25]){
+  assign(paste0("smallIntestineCancerPlot",i),
+         (ggplot(get(i1sex[i]),aes(start_position,Gain),size=.5)+
+            geom_point()+
+            geom_point(aes(y=-Loss))+
+            xlab("Gene Start Position")+
+            ylab("Copy Number Variable")+ggtitle(paste0("chromosome",i))+
+            theme(plot.title = element_text(hjust = .5 ,size=7.5,face="bold"))+
+            theme(axis.text=element_text(size=5),
+                  axis.title=element_text(size=5,face="bold"))))
+}
+
+smallIntestineCancerChromosomesPlot<-grid.arrange(smallIntestineCancerPlot1,smallIntestineCancerPlot2,smallIntestineCancerPlot3,smallIntestineCancerPlot4,smallIntestineCancerPlot5,smallIntestineCancerPlot6,smallIntestineCancerPlot7,smallIntestineCancerPlot8,smallIntestineCancerPlot9,smallIntestineCancerPlot10,smallIntestineCancerPlot11,smallIntestineCancerPlot12,smallIntestineCancerPlot13,smallIntestineCancerPlot14,smallIntestineCancerPlot15,smallIntestineCancerPlot16,smallIntestineCancerPlot17,smallIntestineCancerPlot18,smallIntestineCancerPlot19,smallIntestineCancerPlot20,smallIntestineCancerPlot21,smallIntestineCancerPlot22,smallIntestineCancerPlotX,smallIntestineCancerPlotY,nrow=6,ncol=4)
+
+
+
+
+library(shiny)
+USC<-fluidPage(
+  titlePanel("Pancreatic Cancer Chromosome Data"),
+  mainPanel(
+    selectizeInput("cancerType","Cancer",choices=c("pancreasCancer","stomachCancer","centralNervousSystemCancer","lungCancer","breastCancer","haematopoieticandlymphoidtissueCancer","largeIntestineCancer","skinCancer","ovarianCancer","kidneyCancer","upperAerodigestiveTractCancer","oesophagusCancer","liverCancer","endometrialCancer","prostateCancer","thyroidCancer","softTissueCancer","testicularCancer","pleuralCancer","boneCancer","autonomicGangliaCancer","thymusCancer","eyeCancer","NSCancer","biliaryTractCancer","vulvaCancer","salivaryGlandCancer","placentalCancer","smallIntestineCancer")),
+    
+    conditionalPanel(
+      condition = "input.cancerType =='pancreasCancer'",
+      selectInput("geneName", "Gene Name",
+                  choices=(pancreasCancer$gene_name)
+      )),
+    
+          plotOutput("graph1", width="150%"),
+          plotOutput("graph2",width="150%"),
+          plotOutput("graph3",width="150%"),
+          plotOutput("graph4",width="150%"),
+          plotOutput("graph5",width="150%"),
+          plotOutput("graph6",width="150%"),
+          plotOutput("graph7",width="150%"),
+          plotOutput("graph8", width="150%"),
+          plotOutput("graph9",width="150%"),
+          plotOutput("graph10",width="150%"),
+          plotOutput("graph11",width="150%"),
+          plotOutput("graph12",width="150%"),
+          plotOutput("graph13",width="150%"),
+          plotOutput("graph14",width="150%"),
+          plotOutput("graph15",width="150%"),
+          plotOutput("graph16",width="150%"),
+          plotOutput("graph17",width="150%"),
+          plotOutput("graph18",width="150%"),
+          plotOutput("graph19",width="150%"),
+          plotOutput("graph20",width="150%"),
+          plotOutput("graph21",width="150%"),
+          plotOutput("graph22",width="150%")
+          # plotOutput("graphX",width="150%"),
+          # plotOutput("graphY",width="150%")
+
+
+    ))
+apple<-function(output,input){
+  
+  
+  cancerType<-reactive({
+    cancerType<-input$cancerType
+  })
+  
+  
+  choices<-list("pancreasCancerPlot","stomachCancerPlot","centralNervousSystemCancerPlot","lungCancerPlot","breastCancerPlot","haematopoieticandlymphoidtissueCancerPlot","largeIntestineCancerPlot","skinCancerPlot","ovarianCancerPlot","kidneyCancerPlot","upperAerodigestiveTractCancerPlot","oesophagusCancerPlot","liverCancerPlot","endometrialCancerPlot","prostateCancerPlot","thyroidCancerPlot","softTissueCancerPlot","testicularCancerPlot","pleuralCancerPlot","boneCancerPlot","autonomicGangliaCancerPlot","thymusCancerPlot","eyeCancerPlot","NSCancerPlot","biliaryTractCancerPlot","vulvaCancerPlot","salivaryGlandCancerPlot","placentalCancerPlot","smallIntestineCancerPlot")
+
+
+  ##############################################
+  #dsex<-c("pancreasCancerX","pancreasCancerY")
+  
+  # for (i in LETTERS[24:25]){
+  #   assign(dsex[i],data.frame(pancreasCancer[c(grep(paste("\\b",i,"\\b",sep=""),pancreasCancer$chromosome_name)),]))
+  #   assign(dsex[i],arrange(((get(dsex[i]))),start_position))
+  #   assign(dsex[i],(get(dsex[i])[c("gene_name","Gain","Loss","start_position")]))
+  # }
+  # 
+  # pancreasCancerSexPlots<-c("pancreasCancerPlotX","pancreasCancerPlotY")
+  # 
+  # 
+  # for (i in LETTERS[24:25]){
+  #   assign(paste0("pancreasCancerPlot",i),
+  #          (ggplot(get(dsex[i]),aes(start_position,Gain),size=.5)+
+  #             geom_point()+
+  #             geom_point(aes(y=-Loss),color="red")+
+  #             xlab("Gene Start Position")+
+  #             ylab("Copy Number Variable")+ggtitle(paste0("chromosome",i))+
+  #             theme(plot.title = element_text(hjust = .5 ,size=7.5,face="bold"))+
+  #             theme(axis.text=element_text(size=5),
+  #                   axis.title=element_text(size=5,face="bold"))))
+  # }
+
+      for (k in 1:22) {local({
+        q <- k
+        output[[paste('graph', q, sep='')]] <- renderPlot({
+    i=1
+    d<-c((paste0((input$cancerType),i)),paste0(input$cancerType,i+1),paste0(input$cancerType,i+2),paste0(input$cancerType,i+3),paste0(input$cancerType,i+4),paste0(input$cancerType,i+5),paste0(input$cancerType,i+6),paste0(input$cancerType,i+7),paste0(input$cancerType,i+8),paste0(input$cancerType,i+9),paste0(input$cancerType,i+10),paste0(input$cancerType,i+11),paste0(input$cancerType,i+12),paste0(input$cancerType,i+13),paste0(input$cancerType,i+14),paste0(input$cancerType,i+15),paste0(input$cancerType,i+16),paste0(input$cancerType,i+17),paste0(input$cancerType,i+18),paste0(input$cancerType,i+19), paste0(input$cancerType,i+20),paste0(input$cancerType,i+21))
+    # for (i in 1:22){
+    #   assign(d[i],data.frame(get(d[i])[c(grep(paste("\\b",i,"\\b",sep="")),(get(d[i]$chromosome_name))),]))
+    #   assign(d[i],arrange((get(d[i])),start_position))
+    #   assign(d[i],(get(d[i])[,c("gene_name","Gain","Loss","start_position")]))
+    # }
+    pancreasCancerPlots<-c(paste(input$cancerType,"Plot",i,sep=""), paste(input$cancerType,"Plot",i+1,sep=""),paste(input$cancerType,"Plot",i+2,sep=""),paste(input$cancerType,"Plot",i+3,sep=""),paste(input$cancerType,"Plot",i+4,sep=""),paste(input$cancerType,"Plot",i+5,sep=""),paste(input$cancerType,"Plot",i+6,sep=""),paste(input$cancerType,"Plot",i+7,sep=""),paste(input$cancerType,"Plot",i+8,sep=""),paste(input$cancerType,"Plot",i+9,sep=""),paste(input$cancerType,"Plot",i+10,sep=""),paste(input$cancerType,"Plot",i+11,sep=""),paste(input$cancerType,"Plot",i+12,sep=""),paste(input$cancerType,"Plot",i+13,sep=""),paste(input$cancerType,"Plot",i+14,sep=""),paste(input$cancerType,"Plot",i+15,sep=""),paste(input$cancerType,"Plot",i+16,sep=""),paste(input$cancerType,"Plot",i+17,sep=""),paste(input$cancerType,"Plot",i+18,sep=""),paste(input$cancerType,"Plot",i+19,sep=""),paste(input$cancerType,"Plot",i+20,sep=""),paste(input$cancerType,"Plot",i+21,sep=""))
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              
+    #for (j in 1:22){
+      assign(pancreasCancerPlots[q],
+             (ggplot(get(d[q]),aes(x=start_position,y=Gain)) +
+                geom_point()+
+                geom_point(aes(y=-Loss))+
+                xlab("Gene Start Position")+
+                ylab("Copy Number Variable")+ggtitle(paste0("chromosome",q))+
+                theme(plot.title = element_text(hjust = .5 ,size=14.5,face="bold"))+
+                theme(axis.text=element_text(size=10),
+                      axis.title=element_text(size=10,face="bold"))+
+      if (as.character(input$geneName) %in% (get(d[q])$gene_name)){
+        #moses<-get(d[q])[(grep(input$geneName,get(d[q])$gene_name)),]
+        geom_point(data=get(d[q])[(grep(as.character(input$geneName),get(d[q])$gene_name)),],aes(x=start_position,y=Loss,col="red",size=.3))
+        }
+      )
+  )
+      print(get(pancreasCancerPlots[q]))
+     
+    })})}}
+
+#   output$graph2<-renderPlot({
+#     get(paste0((input$cancerType),2))})
+  
+#   output$graph3<-renderPlot({
+#     get(paste0((input$cancerType),3))})
+  
+#   output$graph4<-renderPlot({
+#     get(paste0((input$cancerType),4))})
+#   output$graph5<-renderPlot({
+#     get(paste0((input$cancerType),5))})
+#   output$graph6<-renderPlot({
+#     get(paste0((input$cancerType),6))})
+#   output$graph7<-renderPlot({
+#     get(paste0((input$cancerType),7))})
+#   output$graph8<-renderPlot({
+#     get(paste0((input$cancerType),8))})
+#   output$graph9<-renderPlot({
+#     get(paste0((input$cancerType),9))})
+#   output$graph10<-renderPlot({
+#     get(paste0((input$cancerType),10))})
+#   output$graph11<-renderPlot({
+#     get(paste0((input$cancerType),11))})
+#   output$graph12<-renderPlot({
+#     get(paste0((input$cancerType),12))})
+#   output$graph13<-renderPlot({
+#     get(paste0((input$cancerType),13))})
+#   output$graph4<-renderPlot({
+#     get(paste0((input$cancerType),14))})
+#   output$graph15<-renderPlot({
+#     get(paste0((input$cancerType),15))})
+#   output$graph16<-renderPlot({
+#     get(paste0((input$cancerType),16))})
+#   output$graph17<-renderPlot({
+#     get(paste0((input$cancerType),17))})
+#   output$graph18<-renderPlot({
+#     get(paste0((input$cancerType),18))})
+#   output$graph19<-renderPlot({
+#     get(paste0((input$cancerType),19))})
+#   output$graph20<-renderPlot({
+#     get(paste0((input$cancerType),20))})
+#   output$graph21<-renderPlot({
+#     get(paste0((input$cancerType),21))})
+#   output$graph22<-renderPlot({
+#     get(paste0((input$cancerType),22))})
+#   output$graphX<-renderPlot({
+#     get(paste0((input$cancerType),"X"))})
+#   output$graphY<-renderPlot({
+#     get(paste0((input$cancerType),"Y"))})
+
+# 
+#   
+# UCLA<- function(output,input) {
+#   
+#   output$graph <- renderImage({
+#     # When input$n is 1, filename is ./images/image1.jpeg
+#     filename <- normalizePath(file.path(paste('/Users/jasonlewis/Documents/LearnR/stomachCancerChromosomesPlot.jpeg')))
+#     # Return a list containing the filename
+#     list(src = filename)
+#   }, deleteFile = FALSE)
+#   output$graph1 <- renderImage({
+#     # When input$n is 1, filename is ./images/image1.jpeg
+#     filename <- normalizePath(file.path(paste('/Users/jasonlewis/Documents/LearnR/stomachCancerChromosomesPlot.jpeg')))
+#     # Return a list containing the filename
+#     list(src = filename)
+#   }, deleteFile = FALSE)
+# output$graph2 <- renderImage({
+#   # When input$n is 1, filename is ./images/image1.jpeg
+#   filename <- normalizePath(file.path(paste('/Users/jasonlewis/Documents/LearnR/stomachCancerChromosomesPlot.jpeg')))
+#   # Return a list containing the filename
+#   list(src = filename)
+# }, deleteFile = FALSE)
+#     }
+#   
+shinyApp(ui=USC,server=apple)
+
+
+
+geneNames=list(geneNames)
+scrollX 
+multiplot <- function(..., plotlist=NULL, cols) {
+  require(grid)
+  
+  # Make a list from the ... arguments and plotlist
+  plots <- c(list(...), plotlist)
+  
+  numPlots = length(plots)
+  
+  # Make the panel
+  plotCols = cols                          # Number of columns of plots
+  plotRows = ceiling(numPlots/plotCols) # Number of rows needed, calculated from # of cols
+  
+  # Set up the page
+  grid.newpage()
+  pushViewport(viewport(layout = grid.layout(plotRows, plotCols)))
+  vplayout <- function(x, y)
+    viewport(layout.pos.row = x, layout.pos.col = y)
+  
+  # Make each plot, in the correct location
+  jesus<-for (i in 1:numPlots) {
+    curRow = ceiling(i/plotCols)
+    curCol = (i-1) %% plotCols + 1
+    multi<-print(plots[[i]], vp = vplayout(curRow, curCol ))
+  }
+  return(multiplot);
+  
+}
+
+
+
+
+
+byGene
+
+
+print('pancreas')
+
+
+
+# asdf<-left_join(byCancerSubset,chromosomes,by=(gene_name="hgnc_symbol"))
+# asdf<-asdf[c("gene_name","chromosome_name",)]
+#    
+# poop=grep("gene input",asdf)
+# shit=poop$chromosome_name
+# pee=
+
+
+# 
+# chromosomeNum<-data[c(grep("input",byGene),]
+# flute<-as.numeric(chromosomeNum$chromosome_name)
+# plot(paste("flute$gene_name"))
+
+
+
+for (k in 1:22) {local({
+  q <- k
+  output[[paste('graph', q, sep='')]] <- renderPlot({
+  
+      
+  })
+  })}
+
+for (x in 1:10) {local({
+  i <- x
+  output[[paste('result', i, sep='')]] <- reactive(function(){
+    if (input[[paste('run', i, sep='')]] == 0)
+      return()
+    return(isolate({
+      runCode(input[[paste('code', i, sep='')]])
+    }))
+  })
+})}
 
