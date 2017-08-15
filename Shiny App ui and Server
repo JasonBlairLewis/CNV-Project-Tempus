@@ -1,0 +1,51 @@
+
+ui<-
+fluidPage(
+  useShinyjs(),
+  titlePanel("CNV Chromosome Data"),
+  mainPanel( 
+    selectInput("cancerType","Cancer Type", choices=cancerNames),
+    selectInput("chromosomeNumber","Chromosome Number",choices=c(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22)),
+    uiOutput("startPosition"),
+    fluidRow(
+    plotOutput("plot1",width="150%"),
+     plotOutput("plot2",width="150%")
+
+  )
+  )
+  )
+  
+server<-function(output,input){
+  
+
+output$startPosition<-renderUI({
+  great=seq(0,(round(as.numeric(tail((unlist(get(paste0(input$cancerType,input$chromosomeNumber))[4])),1))/1000000,0)-4),1)
+selectizeInput("startPosition","Start Position", choices = great)
+  })
+
+  output$plot1<-renderPlot({
+    ggplot(get(paste0(input$cancerType,input$chromosomeNumber)),aes(x=start_position,y=Gain))+
+      geom_point()+
+      geom_point(data=get(paste0(input$cancerType,input$chromosomeNumber)),aes(x=start_position,y=-Loss))+
+              geom_rect(aes(xmin=as.numeric(input$startPosition)*1000000,xmax=as.numeric(input$startPosition)*1000000+5000000,ymin=0,ymax=mean(as.numeric(unlist(subset(get(paste0(input$cancerType,input$chromosomeNumber)),start_position>=as.numeric(input$startPosition)*1000000&start_position<=as.numeric(input$startPosition)*1000000+5000000)[,2])))),fill="blue")+
+              geom_rect(aes(xmin=as.numeric(input$startPosition)*1000000,xmax=as.numeric(input$startPosition)*1000000+5000000,ymin=-mean(as.numeric(unlist(subset(get(paste0(input$cancerType,input$chromosomeNumber)),start_position>=as.numeric(input$startPosition)*1000000&start_position<=as.numeric(input$startPosition)*1000000+5000000)[,3]))),ymax=0),fill="red")
+
+  })
+  
+    output$plot2<-renderPlot({
+     ggplot(get(paste0("cancerChromosome",input$chromosomeNumber,"Gain")),aes(x=start_position,y=n))+
+       geom_point()+
+       geom_point(data=get(paste0("cancerChromosome",input$chromosomeNumber,"Loss")),aes(x=start_position,y=n))+
+     geom_rect(aes(xmin=as.numeric(input$startPosition)*1000000,xmax=as.numeric(input$startPosition)*1000000+5000000,ymin=0, ymax=mean(as.numeric(unlist(subset(get(paste0("cancerChromosome",1,"Gain")),start_position>=as.numeric(input$startPosition)*1000000&start_position<=as.numeric(input$startPosition)*1000000+5000000)[,3])))),fill="blue")+
+     geom_rect(aes(xmin=as.numeric(input$startPosition)*1000000,xmax=as.numeric(input$startPosition)*1000000+5000000,ymin=mean(as.numeric(unlist(subset(get(paste0("cancerChromosome",1,"Loss")),start_position>=as.numeric(input$startPosition)*1000000&start_position<=as.numeric(input$startPosition)*1000000+5000000)[,3]))),ymax=0),fill="red")
+
+
+    })
+ 
+    
+  
+}
+
+shinyApp(ui,server)
+library(shiny)
+library(shinyjs)
