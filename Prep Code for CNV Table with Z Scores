@@ -37,6 +37,7 @@ as.data.frame(chromosomes)#turns chromosomes into data.frame
 #arrange chromosome data by chromosome number
 chromosomes<-arrange(chromosomes,chromosome_name)
 
+
 ######################################################################################
 setwd("/Users/jasonlewis/Downloads")
 byCancerData<-fread('CosmicCompleteCNV.csv')
