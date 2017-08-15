@@ -1,0 +1,457 @@
+require(data.table)
+require(tidyverse)
+require(plotly)
+require(ggplot2)
+require(biomaRt)
+require(shiny)
+require(shinyjs)
+require(tibble)
+#####Develops dataset chromosomes 
+# Use the Ensembl GRCH37 reference genome
+mart <- useEnsembl(biomart="ensembl", dataset = "hsapiens_gene_ensembl", GRCh=37)
+
+# Data frame of attributes which you can query / return from ensembl
+atts <- listAttributes(mart)
+
+# Example (querying with "hgnc_symbol"...  you can pass in a vector to values=)
+example <- getBM(attributes = c("hgnc_symbol",
+                                "chromosome_name",
+                                "start_position",
+                                "end_position",
+                                "strand"),
+                 #filters = "hgnc_symbol", 
+                 #values = attributes,
+                 mart = mart)
+#Gets all data from attributes from all of human genome
+chromosomes<-arrange(example,start_position)
+#Filters out non relevant data so I only have chromosome numbers not letter garbage
+chromosomes<-chromosomes[-c(grep("_", chromosomes$chromosome_name)),]
+chromosomes<-chromosomes[-c(grep("G", chromosomes$chromosome_name)),]
+chromosomes<-chromosomes[-c(grep("M", chromosomes$chromosome_name)),]
+chromosomes<-chromosomes[-which(chromosomes$hgnc_symbol==""),]
+#Turns chromosomes into data.frame so I can manipulate it as so
+as.data.frame(chromosomes)#turns chromosomes into data.frame 
+#arrange chromosome data by chromosome number
+chromosomes<-arrange(chromosomes,chromosome_name)
+
+######################################################################################
+setwd("/Users/jasonlewis/Downloads")
+byCancerData<-fread('CosmicCompleteCNV.csv')
+byCancerSubset<- subset(byCancerData,TOTAL_CN>=8 | TOTAL_CN <2)
+qp<-grep("ENSG",byCancerSubset$gene_name)
+byCancerSubset<-byCancerSubset[-c(qp)]
+pq<-grep("_", byCancerSubset$gene_name)
+byCancerSubset<-byCancerSubset[-c(pq)]
+byCancerSubset<-byCancerSubset[,c("CNV_ID", "gene_name","Primary site","TOTAL_CN","MUT_TYPE")]
+colnames(byCancerSubset)<-c("CNV_ID","gene_name","primarySite","TOTAL_CN","MUT_TYPE")
+byCancerSubset<-byCancerSubset %>% group_by(gene_name, primarySite, MUT_TYPE) %>% tally(sort = TRUE)
+setwd("/users/jasonlewis/Documents/LearnR/Chromosome Table Data for Plot")
+
+
+for (i in 1:22){
+  assign(paste0("cancerChromosome",i,"Gain"),fread(paste0("chromosomegain",i,".csv")))
+}
+for (i in 1:22){
+  assign(paste0("cancerChromosome",i,"Loss"),fread(paste0("chromosomeloss",i,".csv")))
+}
+
+
+#filters all the cancer names from giant data set!
+chromosome1<-full_join(cancerChromosome1Gain,cancerChromosome1Loss)
+pancreas_Cancer<-filter(byCancerSubset,primarySite=="pancreas")
+breast_Cancer<-filter(byCancerSubset,primarySite=="breast")
+central_Nervous_System_Cancer<-filter(byCancerSubset,primarySite=="central_nervous_system")
+ovarian_Cancer<-filter(byCancerSubset,primarySite=="ovary")
+haematopoietic_and_lymphoid_tissue_Cancer<-filter(byCancerSubset, primarySite=="haematopoietic_and_lymphoid_tissue")
+lung_Cancer<-filter(byCancerSubset,primarySite=="lung")
+skin_Cancer<-filter(byCancerSubset,primarySite=="skin")
+autonomic_Ganglia_Cancer<-filter(byCancerSubset,primarySite=="autonomic_ganglia")
+bone_Cancer<-filter(byCancerSubset,primarySite=="bone")
+large_Intestine_Cancer<-filter(byCancerSubset,primarySite=="large_intestine")
+prostate_Cancer<-filter(byCancerSubset,primarySite=="prostate")
+upper_Aerodigestive_Tract_Cancer<-filter(byCancerSubset,primarySite=="upper_aerodigestive_tract")
+kidney_Cancer<-filter(byCancerSubset,primarySite=="kidney")
+urinary_Tract_Cancer<-filter(byCancerSubset,primarySite=="urinary_tract")
+oesophagus_Cancer<-filter(byCancerSubset,primarySite=="oesophagus")
+liver_Cancer<-filter(byCancerSubset,primarySite=="liver")
+endometrial_Cancer<-filter(byCancerSubset,primarySite=="endometrium")
+testicular_Cancer<-filter(byCancerSubset,primarySite=="testis")
+thyroid_Cancer<-filter(byCancerSubset,primarySite=="thyroid")
+cervical_Cancer<-filter(byCancerSubset,primarySite=="cervix")
+soft_Tissue_Cancer<-filter(byCancerSubset,primarySite=="soft_tissue")
+adrenal_Gland_Cancer<-filter(byCancerSubset,primarySite=="adrenal_gland")
+pleural_Cancer<-filter(byCancerSubset,primarySite=="pleura")
+eye_Cancer<-filter(byCancerSubset,primarySite=="eye")
+thymus_Cancer<-filter(byCancerSubset,primarySite=="thymus")
+NS_Cancer<-filter(byCancerSubset,primarySite=="NS")
+vulva_Cancer<-filter(byCancerSubset,primarySite=="vulva")
+small_Intestine_Cancer<-filter(byCancerSubset,primarySite=="small_intestine")
+salivary_Gland_Cancer<-filter(byCancerSubset,primarySite=="salivary_gland")
+placental_Cancer<-filter(byCancerSubset,primarySite=="placenta")
+stomach_Cancer<-filter(byCancerSubset,primarySite=="stomach")
+bone_Cancer<-filter(byCancerSubset,primarySite=="bone")
+
+cancerNames<-c("pancreasCancer","stomachCancer","centralNervousSystemCancer","lungCancer","breastCancer","haematopoieticandlymphoidtissueCancer","largeIntestineCancer","skinCancer","ovarianCancer","kidneyCancer","upperAerodigestiveTractCancer","oesophagusCancer","liverCancer","endometrialCancer","prostateCancer","thyroidCancer","softTissueCancer","testicularCancer","pleuralCancer","boneCancer","autonomicGangliaCancer","thymusCancer","eyeCancer","NSCancer","vulvaCancer","salivaryGlandCancer","placentalCancer","smallIntestineCancer")
+#name<-list(pancreasCancer,stomachCancer,centralNervousSystemCancer,lungCancer,breastCancer,haematopoieticandlymphoidtissueCancer,largeIntestineCancer, skinCancer, ovarianCancer, kidneyCancer, upperAerodigestiveTractCancer, oesophagusCancer, liverCancer, endometrialCancer, prostateCancer,thyroidCancer,softTissueCancer,testicularCancer,pleuralCancer,boneCancer,autonomicGangliaCancer,thymusCancer,eyeCancer,NSCancer,biliaryTractCancer,vulvaCancer,salivaryGlandCancer,placentalCancer,smallIntestineCancer)
+numbersGain<-list(pancreas_Cancer,stomach_Cancer,central_Nervous_System_Cancer,lung_Cancer,breast_Cancer,haematopoietic_and_lymphoid_tissue_Cancer,large_Intestine_Cancer,skin_Cancer,ovarian_Cancer,kidney_Cancer,upper_Aerodigestive_Tract_Cancer,oesophagus_Cancer,liver_Cancer,endometrial_Cancer,prostate_Cancer,thyroid_Cancer,soft_Tissue_Cancer,testicular_Cancer,pleural_Cancer,bone_Cancer,autonomic_Ganglia_Cancer,thymus_Cancer,eye_Cancer,NS_Cancer,vulva_Cancer,salivary_Gland_Cancer,placental_Cancer,small_Intestine_Cancer,urinary_Tract_Cancer,liver_Cancer,endometrial_Cancer,thyroid_Cancer,cervical_Cancer,adrenal_Gland_Cancer)
+numbersLoss<-list(pancreas_Cancer,stomach_Cancer,central_Nervous_System_Cancer,lung_Cancer,breast_Cancer,haematopoietic_and_lymphoid_tissue_Cancer,large_Intestine_Cancer,skin_Cancer,ovarian_Cancer,kidney_Cancer,upper_Aerodigestive_Tract_Cancer,oesophagus_Cancer,liver_Cancer,endometrial_Cancer,prostate_Cancer,thyroid_Cancer,soft_Tissue_Cancer,testicular_Cancer,pleural_Cancer,bone_Cancer,autonomic_Ganglia_Cancer,thymus_Cancer,eye_Cancer,NS_Cancer,vulva_Cancer,salivary_Gland_Cancer,placental_Cancer,small_Intestine_Cancer,urinary_Tract_Cancer,liver_Cancer,endometrial_Cancer,thyroid_Cancer,cervical_Cancer,adrenal_Gland_Cancer)
+geneNames<-byCancerSubset$gene_name
+
+
+
+
+#Creates Variables Pancreas Cancer 1, pancdreas Cancer2...., stomach Cancr 1, stomach Cancer 2, which contain gain and loss information for each chromosome for each type of cancer
+for (i in 1:28){
+  j<-assign(paste0("Gain",cancerNames[i]), filter(numbersGain[[i]],MUT_TYPE=="gain"))
+  p<-assign(paste0("Loss",cancerNames[i]), filter(numbersLoss[[i]],MUT_TYPE=="loss"))
+  q<-full_join(j,p,by="gene_name")
+  q[is.na(q)]<-0
+  colnames(q)<-c("gene_name","NA","NA","Gain","NA","NA","Loss")
+  assign(cancerNames[i],q[c("gene_name","Gain","Loss")])
+}
+
+
+
+#the next large chunks of code (500ish lines) of code left joines the data from "Chromosomes" from biomart, to pair up chromosome numbers to individual Cancer Genes to i.e. pancreas Cancer 1 , stomach cancer 1
+pancreasCancer<-(left_join(pancreasCancer,chromosomes,by=c(gene_name="hgnc_symbol")))
+
+d<-c("pancreasCancer1","pancreasCancer2","pancreasCancer3","pancreasCancer4","pancreasCancer5","pancreasCancer6","pancreasCancer7","pancreasCancer8","pancreasCancer9","pancreasCancer10","pancreasCancer11","pancreasCancer12","pancreasCancer13","pancreasCancer14","pancreasCancer15","pancreasCancer16","pancreasCancer17","pancreasCancer18","pancreasCancer19","pancreasCancer20", "pancreasCancer21","pancreasCancer22")
+for (i in 1:22){
+  assign(d[i],data.frame(pancreasCancer[c(grep(paste("\\b",i,"\\b",sep=""),pancreasCancer$chromosome_name)),]))
+  assign(d[i],arrange(((get(d[i]))),start_position))
+  assign(d[i],(get(d[i])[c("gene_name","Gain","Loss","start_position")]))
+}
+
+
+stomachCancer<-(left_join(stomachCancer,chromosomes,by=c(gene_name="hgnc_symbol")))
+
+
+a<-c("stomachCancer1","stomachCancer2","stomachCancer3","stomachCancer4","stomachCancer5","stomachCancer6","stomachCancer7","stomachCancer8","stomachCancer9","stomachCancer10","stomachCancer11","stomachCancer12","stomachCancer13","stomachCancer14","stomachCancer15","stomachCancer16","stomachCancer17","stomachCancer18","stomachCancer19","stomachCancer20", "stomachCancer21","stomachCancer22")
+for (i in 1:22){
+  assign(a[i],data.frame(stomachCancer[c(grep(paste("\\b",i,"\\b",sep=""),stomachCancer$chromosome_name)),]))
+  assign(a[i],arrange(((get(a[i]))),start_position))
+  assign(a[i],(get(a[i])[c("gene_name","Gain","Loss","start_position")]))
+}
+
+
+
+########################################################################################################################
+
+centralNervousSystemCancer<-(left_join(centralNervousSystemCancer,chromosomes,by=c(gene_name="hgnc_symbol")))
+
+b<-c("centralNervousSystemCancer1","centralNervousSystemCancer2","centralNervousSystemCancer3","centralNervousSystemCancer4","centralNervousSystemCancer5","centralNervousSystemCancer6","centralNervousSystemCancer7","centralNervousSystemCancer8","centralNervousSystemCancer9","centralNervousSystemCancer10","centralNervousSystemCancer11","centralNervousSystemCancer12","centralNervousSystemCancer13","centralNervousSystemCancer14","centralNervousSystemCancer15","centralNervousSystemCancer16","centralNervousSystemCancer17","centralNervousSystemCancer18","centralNervousSystemCancer19","centralNervousSystemCancer20", "centralNervousSystemCancer21","centralNervousSystemCancer22")
+for (i in 1:22){
+  assign(b[i],data.frame(centralNervousSystemCancer[c(grep(paste("\\b",i,"\\b",sep=""),centralNervousSystemCancer$chromosome_name)),]))
+  assign(b[i],arrange(((get(b[i]))),start_position))
+  assign(b[i],(get(b[i])[c("gene_name","Gain","Loss","start_position")]))
+}
+
+
+
+####################################################################################################################################
+
+lungCancer<-(left_join(lungCancer,chromosomes,by=c(gene_name="hgnc_symbol")))
+
+c<-c("lungCancer1","lungCancer2","lungCancer3","lungCancer4","lungCancer5","lungCancer6","lungCancer7","lungCancer8","lungCancer9","lungCancer10","lungCancer11","lungCancer12","lungCancer13","lungCancer14","lungCancer15","lungCancer16","lungCancer17","lungCancer18","lungCancer19","lungCancer20", "lungCancer21","lungCancer22")
+for (i in 1:22){
+  assign(c[i],data.frame(lungCancer[c(grep(paste("\\b",i,"\\b",sep=""),lungCancer$chromosome_name)),]))
+  assign(c[i],arrange(((get(c[i]))),start_position))
+  assign(c[i],(get(c[i])[c("gene_name","Gain","Loss","start_position")]))
+}
+
+
+
+#########################################################################################################
+
+breastCancer<-(left_join(breastCancer,chromosomes,by=c(gene_name="hgnc_symbol")))
+
+e<-c("breastCancer1","breastCancer2","breastCancer3","breastCancer4","breastCancer5","breastCancer6","breastCancer7","breastCancer8","breastCancer9","breastCancer10","breastCancer11","breastCancer12","breastCancer13","breastCancer14","breastCancer15","breastCancer16","breastCancer17","breastCancer18","breastCancer19","breastCancer20", "breastCancer21","breastCancer22")
+for (i in 1:22){
+  assign(e[i],data.frame(breastCancer[c(grep(paste("\\b",i,"\\b",sep=""),breastCancer$chromosome_name)),]))
+  assign(e[i],arrange(((get(e[i]))),start_position))
+  assign(e[i],(get(e[i])[c("gene_name","Gain","Loss","start_position")]))
+}
+
+
+
+
+#########################################################################################################
+
+haematopoieticandlymphoidtissueCancer<-(left_join(haematopoieticandlymphoidtissueCancer,chromosomes,by=c(gene_name="hgnc_symbol")))
+
+h<-c("haematopoieticandlymphoidtissueCancer1","haematopoieticandlymphoidtissueCancer2","haematopoieticandlymphoidtissueCancer3","haematopoieticandlymphoidtissueCancer4","haematopoieticandlymphoidtissueCancer5","haematopoieticandlymphoidtissueCancer6","haematopoieticandlymphoidtissueCancer7","haematopoieticandlymphoidtissueCancer8","haematopoieticandlymphoidtissueCancer9","haematopoieticandlymphoidtissueCancer10","haematopoieticandlymphoidtissueCancer11","haematopoieticandlymphoidtissueCancer12","haematopoieticandlymphoidtissueCancer13","haematopoieticandlymphoidtissueCancer14","haematopoieticandlymphoidtissueCancer15","haematopoieticandlymphoidtissueCancer16","haematopoieticandlymphoidtissueCancer17","haematopoieticandlymphoidtissueCancer18","haematopoieticandlymphoidtissueCancer19","haematopoieticandlymphoidtissueCancer20", "haematopoieticandlymphoidtissueCancer21","haematopoieticandlymphoidtissueCancer22")
+for (i in 1:22){
+  assign(h[i],data.frame(haematopoieticandlymphoidtissueCancer[c(grep(paste("\\b",i,"\\b",sep=""),haematopoieticandlymphoidtissueCancer$chromosome_name)),]))
+  assign(h[i],arrange(((get(h[i]))),start_position))
+  assign(h[i],(get(h[i])[c("gene_name","Gain","Loss","start_position")]))
+}
+
+
+
+#########################################################################################################
+
+largeIntestineCancer<-(left_join(largeIntestineCancer,chromosomes,by=c(gene_name="hgnc_symbol")))
+
+k<-c("largeIntestineCancer1","largeIntestineCancer2","largeIntestineCancer3","largeIntestineCancer4","largeIntestineCancer5","largeIntestineCancer6","largeIntestineCancer7","largeIntestineCancer8","largeIntestineCancer9","largeIntestineCancer10","largeIntestineCancer11","largeIntestineCancer12","largeIntestineCancer13","largeIntestineCancer14","largeIntestineCancer15","largeIntestineCancer16","largeIntestineCancer17","largeIntestineCancer18","largeIntestineCancer19","largeIntestineCancer20", "largeIntestineCancer21","largeIntestineCancer22")
+for (i in 1:22){
+  assign(k[i],data.frame(largeIntestineCancer[c(grep(paste("\\b",i,"\\b",sep=""),largeIntestineCancer$chromosome_name)),]))
+  assign(k[i],arrange(((get(k[i]))),start_position))
+  assign(k[i],(get(k[i])[c("gene_name","Gain","Loss","start_position")]))
+}
+
+
+
+#########################################################################################################
+
+skinCancer<-(left_join(skinCancer,chromosomes,by=c(gene_name="hgnc_symbol")))
+
+l<-c("skinCancer1","skinCancer2","skinCancer3","skinCancer4","skinCancer5","skinCancer6","skinCancer7","skinCancer8","skinCancer9","skinCancer10","skinCancer11","skinCancer12","skinCancer13","skinCancer14","skinCancer15","skinCancer16","skinCancer17","skinCancer18","skinCancer19","skinCancer20", "skinCancer21","skinCancer22")
+for (i in 1:22){
+  assign(l[i],data.frame(skinCancer[c(grep(paste("\\b",i,"\\b",sep=""),skinCancer$chromosome_name)),]))
+  assign(l[i],arrange(((get(l[i]))),start_position))
+  assign(l[i],(get(l[i])[c("gene_name","Gain","Loss","start_position")]))
+}
+
+
+#########################################################################################################
+
+ovarianCancer<-(left_join(ovarianCancer,chromosomes,by=c(gene_name="hgnc_symbol")))
+
+m<-c("ovarianCancer1","ovarianCancer2","ovarianCancer3","ovarianCancer4","ovarianCancer5","ovarianCancer6","ovarianCancer7","ovarianCancer8","ovarianCancer9","ovarianCancer10","ovarianCancer11","ovarianCancer12","ovarianCancer13","ovarianCancer14","ovarianCancer15","ovarianCancer16","ovarianCancer17","ovarianCancer18","ovarianCancer19","ovarianCancer20", "ovarianCancer21","ovarianCancer22")
+for (i in 1:22){
+  assign(m[i],data.frame(ovarianCancer[c(grep(paste("\\b",i,"\\b",sep=""),ovarianCancer$chromosome_name)),]))
+  assign(m[i],arrange(((get(m[i]))),start_position))
+  assign(m[i],(get(m[i])[c("gene_name","Gain","Loss","start_position")]))
+}
+
+
+
+#########################################################################################################
+
+kidneyCancer<-(left_join(kidneyCancer,chromosomes,by=c(gene_name="hgnc_symbol")))
+
+n<-c("kidneyCancer1","kidneyCancer2","kidneyCancer3","kidneyCancer4","kidneyCancer5","kidneyCancer6","kidneyCancer7","kidneyCancer8","kidneyCancer9","kidneyCancer10","kidneyCancer11","kidneyCancer12","kidneyCancer13","kidneyCancer14","kidneyCancer15","kidneyCancer16","kidneyCancer17","kidneyCancer18","kidneyCancer19","kidneyCancer20", "kidneyCancer21","kidneyCancer22")
+for (i in 1:22){
+  assign(n[i],data.frame(kidneyCancer[c(grep(paste("\\b",i,"\\b",sep=""),kidneyCancer$chromosome_name)),]))
+  assign(n[i],arrange(((get(n[i]))),start_position))
+  assign(n[i],(get(n[i])[c("gene_name","Gain","Loss","start_position")]))
+}
+
+
+#########################################################################################################
+
+upperAerodigestiveTractCancer<-(left_join(upperAerodigestiveTractCancer,chromosomes,by=c(gene_name="hgnc_symbol")))
+
+o<-c("upperAerodigestiveTractCancer1","upperAerodigestiveTractCancer2","upperAerodigestiveTractCancer3","upperAerodigestiveTractCancer4","upperAerodigestiveTractCancer5","upperAerodigestiveTractCancer6","upperAerodigestiveTractCancer7","upperAerodigestiveTractCancer8","upperAerodigestiveTractCancer9","upperAerodigestiveTractCancer10","upperAerodigestiveTractCancer11","upperAerodigestiveTractCancer12","upperAerodigestiveTractCancer13","upperAerodigestiveTractCancer14","upperAerodigestiveTractCancer15","upperAerodigestiveTractCancer16","upperAerodigestiveTractCancer17","upperAerodigestiveTractCancer18","upperAerodigestiveTractCancer19","upperAerodigestiveTractCancer20", "upperAerodigestiveTractCancer21","upperAerodigestiveTractCancer22")
+for (i in 1:22){
+  assign(o[i],data.frame(upperAerodigestiveTractCancer[c(grep(paste("\\b",i,"\\b",sep=""),upperAerodigestiveTractCancer$chromosome_name)),]))
+  assign(o[i],arrange(((get(o[i]))),start_position))
+  assign(o[i],(get(o[i])[c("gene_name","Gain","Loss","start_position")]))
+}
+
+
+#########################################################################################################
+
+oesophagusCancer<-(left_join(oesophagusCancer,chromosomes,by=c(gene_name="hgnc_symbol")))
+
+p<-c("oesophagusCancer1","oesophagusCancer2","oesophagusCancer3","oesophagusCancer4","oesophagusCancer5","oesophagusCancer6","oesophagusCancer7","oesophagusCancer8","oesophagusCancer9","oesophagusCancer10","oesophagusCancer11","oesophagusCancer12","oesophagusCancer13","oesophagusCancer14","oesophagusCancer15","oesophagusCancer16","oesophagusCancer17","oesophagusCancer18","oesophagusCancer19","oesophagusCancer20", "oesophagusCancer21","oesophagusCancer22")
+for (i in 1:22){
+  assign(p[i],data.frame(oesophagusCancer[c(grep(paste("\\b",i,"\\b",sep=""),oesophagusCancer$chromosome_name)),]))
+  assign(p[i],arrange(((get(p[i]))),start_position))
+  assign(p[i],(get(p[i])[c("gene_name","Gain","Loss","start_position")]))
+}
+
+
+#############################################
+
+
+liverCancer<-(left_join(liverCancer,chromosomes,by=c(gene_name="hgnc_symbol")))
+
+p<-c("liverCancer1","liverCancer2","liverCancer3","liverCancer4","liverCancer5","liverCancer6","liverCancer7","liverCancer8","liverCancer9","liverCancer10","liverCancer11","liverCancer12","liverCancer13","liverCancer14","liverCancer15","liverCancer16","liverCancer17","liverCancer18","liverCancer19","liverCancer20", "liverCancer21","liverCancer22")
+for (i in 1:22){
+  assign(p[i],data.frame(liverCancer[c(grep(paste("\\b",i,"\\b",sep=""),liverCancer$chromosome_name)),]))
+  assign(p[i],arrange(((get(p[i]))),start_position))
+  assign(p[i],(get(p[i])[c("gene_name","Gain","Loss","start_position")]))
+}
+
+
+#########################################################################################################
+
+endometrialCancer<-(left_join(endometrialCancer,chromosomes,by=c(gene_name="hgnc_symbol")))
+
+s<-c("endometrialCancer1","endometrialCancer2","endometrialCancer3","endometrialCancer4","endometrialCancer5","endometrialCancer6","endometrialCancer7","endometrialCancer8","endometrialCancer9","endometrialCancer10","endometrialCancer11","endometrialCancer12","endometrialCancer13","endometrialCancer14","endometrialCancer15","endometrialCancer16","endometrialCancer17","endometrialCancer18","endometrialCancer19","endometrialCancer20", "endometrialCancer21","endometrialCancer22")
+for (i in 1:22){
+  assign(s[i],data.frame(endometrialCancer[c(grep(paste("\\b",i,"\\b",sep=""),endometrialCancer$chromosome_name)),]))
+  assign(s[i],arrange(((get(s[i]))),start_position))
+  assign(s[i],(get(s[i])[c("gene_name","Gain","Loss","start_position")]))
+}
+
+
+#########################################################################################################
+
+prostateCancer<-(left_join(prostateCancer,chromosomes,by=c(gene_name="hgnc_symbol")))
+
+u<-c("prostateCancer1","prostateCancer2","prostateCancer3","prostateCancer4","prostateCancer5","prostateCancer6","prostateCancer7","prostateCancer8","prostateCancer9","prostateCancer10","prostateCancer11","prostateCancer12","prostateCancer13","prostateCancer14","prostateCancer15","prostateCancer16","prostateCancer17","prostateCancer18","prostateCancer19","prostateCancer20", "prostateCancer21","prostateCancer22")
+for (i in 1:22){
+  assign(u[i],data.frame(prostateCancer[c(grep(paste("\\b",i,"\\b",sep=""),prostateCancer$chromosome_name)),]))
+  assign(u[i],arrange(((get(u[i]))),start_position))
+  assign(u[i],(get(u[i])[c("gene_name","Gain","Loss","start_position")]))
+}
+
+
+#########################################################################################################
+
+thyroidCancer<-(left_join(thyroidCancer,chromosomes,by=c(gene_name="hgnc_symbol")))
+
+v<-c("thyroidCancer1","thyroidCancer2","thyroidCancer3","thyroidCancer4","thyroidCancer5","thyroidCancer6","thyroidCancer7","thyroidCancer8","thyroidCancer9","thyroidCancer10","thyroidCancer11","thyroidCancer12","thyroidCancer13","thyroidCancer14","thyroidCancer15","thyroidCancer16","thyroidCancer17","thyroidCancer18","thyroidCancer19","thyroidCancer20", "thyroidCancer21","thyroidCancer22")
+for (i in 1:22){
+  assign(v[i],data.frame(thyroidCancer[c(grep(paste("\\b",i,"\\b",sep=""),thyroidCancer$chromosome_name)),]))
+  assign(v[i],arrange(((get(v[i]))),start_position))
+  assign(v[i],(get(v[i])[c("gene_name","Gain","Loss","start_position")]))
+}
+
+#########################################################################################################
+
+softTissueCancer<-(left_join(softTissueCancer,chromosomes,by=c(gene_name="hgnc_symbol")))
+
+w<-c("softTissueCancer1","softTissueCancer2","softTissueCancer3","softTissueCancer4","softTissueCancer5","softTissueCancer6","softTissueCancer7","softTissueCancer8","softTissueCancer9","softTissueCancer10","softTissueCancer11","softTissueCancer12","softTissueCancer13","softTissueCancer14","softTissueCancer15","softTissueCancer16","softTissueCancer17","softTissueCancer18","softTissueCancer19","softTissueCancer20", "softTissueCancer21","softTissueCancer22")
+for (i in 1:22){
+  assign(w[i],data.frame(softTissueCancer[c(grep(paste("\\b",i,"\\b",sep=""),softTissueCancer$chromosome_name)),]))
+  assign(w[i],arrange(((get(w[i]))),start_position))
+  assign(w[i],(get(w[i])[c("gene_name","Gain","Loss","start_position")]))
+}
+
+
+#########################################################################################################
+
+testicularCancer<-(left_join(testicularCancer,chromosomes,by=c(gene_name="hgnc_symbol")))
+
+x<-c("testicularCancer1","testicularCancer2","testicularCancer3","testicularCancer4","testicularCancer5","testicularCancer6","testicularCancer7","testicularCancer8","testicularCancer9","testicularCancer10","testicularCancer11","testicularCancer12","testicularCancer13","testicularCancer14","testicularCancer15","testicularCancer16","testicularCancer17","testicularCancer18","testicularCancer19","testicularCancer20", "testicularCancer21","testicularCancer22")
+for (i in 1:22){
+  assign(x[i],data.frame(testicularCancer[c(grep(paste("\\b",i,"\\b",sep=""),testicularCancer$chromosome_name)),]))
+  assign(x[i],arrange(((get(x[i]))),start_position))
+  assign(x[i],(get(x[i])[c("gene_name","Gain","Loss","start_position")]))
+}
+
+
+#########################################################################################################
+
+boneCancer<-(left_join(boneCancer,chromosomes,by=c(gene_name="hgnc_symbol")))
+
+y<-c("boneCancer1","boneCancer2","boneCancer3","boneCancer4","boneCancer5","boneCancer6","boneCancer7","boneCancer8","boneCancer9","boneCancer10","boneCancer11","boneCancer12","boneCancer13","boneCancer14","boneCancer15","boneCancer16","boneCancer17","boneCancer18","boneCancer19","boneCancer20", "boneCancer21","boneCancer22")
+for (i in 1:22){
+  assign(y[i],data.frame(boneCancer[c(grep(paste("\\b",i,"\\b",sep=""),boneCancer$chromosome_name)),]))
+  assign(y[i],arrange(((get(y[i]))),start_position))
+  assign(y[i],(get(y[i])[c("gene_name","Gain","Loss","start_position")]))
+}
+
+
+#########################################################################################################
+
+pleuralCancer<-(left_join(pleuralCancer,chromosomes,by=c(gene_name="hgnc_symbol")))
+
+z<-c("pleuralCancer1","pleuralCancer2","pleuralCancer3","pleuralCancer4","pleuralCancer5","pleuralCancer6","pleuralCancer7","pleuralCancer8","pleuralCancer9","pleuralCancer10","pleuralCancer11","pleuralCancer12","pleuralCancer13","pleuralCancer14","pleuralCancer15","pleuralCancer16","pleuralCancer17","pleuralCancer18","pleuralCancer19","pleuralCancer20", "pleuralCancer21","pleuralCancer22")
+for (i in 1:22){
+  assign(z[i],data.frame(pleuralCancer[c(grep(paste("\\b",i,"\\b",sep=""),pleuralCancer$chromosome_name)),]))
+  assign(z[i],arrange(((get(z[i]))),start_position))
+  assign(z[i],(get(z[i])[c("gene_name","Gain","Loss","start_position")]))
+}
+
+
+#########################################################################################################
+
+autonomicGangliaCancer<-(left_join(autonomicGangliaCancer,chromosomes,by=c(gene_name="hgnc_symbol")))
+
+a1<-c("autonomicGangliaCancer1","autonomicGangliaCancer2","autonomicGangliaCancer3","autonomicGangliaCancer4","autonomicGangliaCancer5","autonomicGangliaCancer6","autonomicGangliaCancer7","autonomicGangliaCancer8","autonomicGangliaCancer9","autonomicGangliaCancer10","autonomicGangliaCancer11","autonomicGangliaCancer12","autonomicGangliaCancer13","autonomicGangliaCancer14","autonomicGangliaCancer15","autonomicGangliaCancer16","autonomicGangliaCancer17","autonomicGangliaCancer18","autonomicGangliaCancer19","autonomicGangliaCancer20", "autonomicGangliaCancer21","autonomicGangliaCancer22")
+for (i in 1:22){
+  assign(a1[i],data.frame(autonomicGangliaCancer[c(grep(paste("\\b",i,"\\b",sep=""),autonomicGangliaCancer$chromosome_name)),]))
+  assign(a1[i],arrange(((get(a1[i]))),start_position))
+  assign(a1[i],(get(a1[i])[c("gene_name","Gain","Loss","start_position")]))
+}
+
+#########################################################################################################
+
+thymusCancer<-(left_join(thymusCancer,chromosomes,by=c(gene_name="hgnc_symbol")))
+
+b1<-c("thymusCancer1","thymusCancer2","thymusCancer3","thymusCancer4","thymusCancer5","thymusCancer6","thymusCancer7","thymusCancer8","thymusCancer9","thymusCancer10","thymusCancer11","thymusCancer12","thymusCancer13","thymusCancer14","thymusCancer15","thymusCancer16","thymusCancer17","thymusCancer18","thymusCancer19","thymusCancer20", "thymusCancer21","thymusCancer22")
+for (i in 1:22){
+  assign(b1[i],data.frame(thymusCancer[c(grep(paste("\\b",i,"\\b",sep=""),thymusCancer$chromosome_name)),]))
+  assign(b1[i],arrange(((get(b1[i]))),start_position))
+  assign(b1[i],(get(b1[i])[c("gene_name","Gain","Loss","start_position")]))
+}
+
+
+
+#########################################################################################################
+
+eyeCancer<-(left_join(eyeCancer,chromosomes,by=c(gene_name="hgnc_symbol")))
+
+c1<-c("eyeCancer1","eyeCancer2","eyeCancer3","eyeCancer4","eyeCancer5","eyeCancer6","eyeCancer7","eyeCancer8","eyeCancer9","eyeCancer10","eyeCancer11","eyeCancer12","eyeCancer13","eyeCancer14","eyeCancer15","eyeCancer16","eyeCancer17","eyeCancer18","eyeCancer19","eyeCancer20", "eyeCancer21","eyeCancer22")
+for (i in 1:22){
+  assign(c1[i],data.frame(eyeCancer[c(grep(paste("\\b",i,"\\b",sep=""),eyeCancer$chromosome_name)),]))
+  assign(c1[i],arrange(((get(c1[i]))),start_position))
+  assign(c1[i],(get(c1[i])[c("gene_name","Gain","Loss","start_position")]))
+}
+
+
+#########################################################################################################
+
+NSCancer<-(left_join(NSCancer,chromosomes,by=c(gene_name="hgnc_symbol")))
+
+d1<-c("NSCancer1","NSCancer2","NSCancer3","NSCancer4","NSCancer5","NSCancer6","NSCancer7","NSCancer8","NSCancer9","NSCancer10","NSCancer11","NSCancer12","NSCancer13","NSCancer14","NSCancer15","NSCancer16","NSCancer17","NSCancer18","NSCancer19","NSCancer20", "NSCancer21","NSCancer22")
+for (i in 1:22){
+  assign(d1[i],data.frame(NSCancer[c(grep(paste("\\b",i,"\\b",sep=""),NSCancer$chromosome_name)),]))
+  assign(d1[i],arrange(((get(d1[i]))),start_position))
+  assign(d1[i],(get(d1[i])[c("gene_name","Gain","Loss","start_position")]))
+}
+
+
+#########################################################################################################
+
+vulvaCancer<-(left_join(vulvaCancer,chromosomes,by=c(gene_name="hgnc_symbol")))
+
+f1<-c("vulvaCancer1","vulvaCancer2","vulvaCancer3","vulvaCancer4","vulvaCancer5","vulvaCancer6","vulvaCancer7","vulvaCancer8","vulvaCancer9","vulvaCancer10","vulvaCancer11","vulvaCancer12","vulvaCancer13","vulvaCancer14","vulvaCancer15","vulvaCancer16","vulvaCancer17","vulvaCancer18","vulvaCancer19","vulvaCancer20", "vulvaCancer21","vulvaCancer22")
+for (i in 1:22){
+  assign(f1[i],data.frame(vulvaCancer[c(grep(paste("\\b",i,"\\b",sep=""),vulvaCancer$chromosome_name)),]))
+  assign(f1[i],arrange(((get(f1[i]))),start_position))
+  assign(f1[i],(get(f1[i])[c("gene_name","Gain","Loss","start_position")]))
+}
+
+
+#########################################################################################################
+
+salivaryGlandCancer<-(left_join(salivaryGlandCancer,chromosomes,by=c(gene_name="hgnc_symbol")))
+
+g1<-c("salivaryGlandCancer1","salivaryGlandCancer2","salivaryGlandCancer3","salivaryGlandCancer4","salivaryGlandCancer5","salivaryGlandCancer6","salivaryGlandCancer7","salivaryGlandCancer8","salivaryGlandCancer9","salivaryGlandCancer10","salivaryGlandCancer11","salivaryGlandCancer12","salivaryGlandCancer13","salivaryGlandCancer14","salivaryGlandCancer15","salivaryGlandCancer16","salivaryGlandCancer17","salivaryGlandCancer18","salivaryGlandCancer19","salivaryGlandCancer20", "salivaryGlandCancer21","salivaryGlandCancer22")
+for (i in 1:22){
+  assign(g1[i],data.frame(salivaryGlandCancer[c(grep(paste("\\b",i,"\\b",sep=""),salivaryGlandCancer$chromosome_name)),]))
+  assign(g1[i],arrange(((get(g1[i]))),start_position))
+  assign(g1[i],(get(g1[i])[c("gene_name","Gain","Loss","start_position")]))
+}
+
+
+
+#########################################################################################################
+
+placentalCancer<-(left_join(placentalCancer,chromosomes,by=c(gene_name="hgnc_symbol")))
+
+h1<-c("placentalCancer1","placentalCancer2","placentalCancer3","placentalCancer4","placentalCancer5","placentalCancer6","placentalCancer7","placentalCancer8","placentalCancer9","placentalCancer10","placentalCancer11","placentalCancer12","placentalCancer13","placentalCancer14","placentalCancer15","placentalCancer16","placentalCancer17","placentalCancer18","placentalCancer19","placentalCancer20", "placentalCancer21","placentalCancer22")
+for (i in 1:22){
+  assign(h1[i],data.frame(placentalCancer[c(grep(paste("\\b",i,"\\b",sep=""),placentalCancer$chromosome_name)),]))
+  assign(h1[i],arrange(((get(h1[i]))),start_position))
+  assign(h1[i],(get(h1[i])[c("gene_name","Gain","Loss","start_position")]))
+}
+
+
+
+#########################################################################################################
+
+smallIntestineCancer<-(left_join(smallIntestineCancer,chromosomes,by=c(gene_name="hgnc_symbol")))
+
+i1<-c("smallIntestineCancer1","smallIntestineCancer2","smallIntestineCancer3","smallIntestineCancer4","smallIntestineCancer5","smallIntestineCancer6","smallIntestineCancer7","smallIntestineCancer8","smallIntestineCancer9","smallIntestineCancer10","smallIntestineCancer11","smallIntestineCancer12","smallIntestineCancer13","smallIntestineCancer14","smallIntestineCancer15","smallIntestineCancer16","smallIntestineCancer17","smallIntestineCancer18","smallIntestineCancer19","smallIntestineCancer20", "smallIntestineCancer21","smallIntestineCancer22")
+for (i in 1:22){
+  assign(i1[i],data.frame(smallIntestineCancer[c(grep(paste("\\b",i,"\\b",sep=""),smallIntestineCancer$chromosome_name)),]))
+  assign(i1[i],arrange(((get(i1[i]))),start_position))
+  assign(i1[i],(get(i1[i])[c("gene_name","Gain","Loss","start_position")]))
+}
+
